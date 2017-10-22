@@ -1,14 +1,5 @@
-/// <reference path="../tsumego.d.ts" />
-/// <reference path="../libs/node.d.ts" />
-/// <reference path="../libs/json-file.ts" />
-
-declare module NodeJS {
-    interface Global {
-        tsumego: typeof tsumego;
-    }
-}
-
-global.tsumego = require('../../tsumego.es6');
+import 'node';
+import tsumego from 'tsumego.js';
 
 const w = JSON.parse(process.argv[3] || null) || tsumego.sequence(7, () => Math.random() - 0.5);
 const eps = +process.argv[2] || 0.05;

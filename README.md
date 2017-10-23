@@ -1,4 +1,4 @@
-# Build
+In the repo folder:
 
 ```
 npm i
@@ -9,7 +9,7 @@ Results are in `.bin` folder.
 
 This script does a bunch of things:
 
-1. reads SGF files from the sgf-problems repo
+1. reads SGF files from the `sgf-problems` repo
 2. solves each tsumego
 3. picks all relevant subproblems
 4. computes all relevant features

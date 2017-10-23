@@ -1,18 +1,8 @@
 /**
  * Usage: node parse-sgf bin/json 2
  * 
- * This script does a bunch of things:
- * 
- *  1. reads SGF files from the sgf-problems repo
- *  2. solves each tsumego
- *  3. picks all relevant subproblems
- *  4. computes all relevant features
- *  5. generates JSON files with those features
- * 
- * Then a Python script reads the JSON files
- * and feeds to TensorFlow. The output of TF
- * is a large NN that evaluates the status of
- * a given tsumego.
+ * Input: SGF files from the `sgf-problems` module.
+ * Output: JSON files with features and labels.
  */
 
 if (process.argv.length < 4) {
@@ -53,38 +43,19 @@ for (const dir of sgf.dirs) {
  * and returns them as a list of feature
  * planes where each number is in `0..1` range.
  * 
- * The features are computed reltive to
- * the `target` stone: it appears in the
- * middle of each feature plane.
- * 
- * Then the returned tensor has shape `[F, N, N]`
- * where `F` is the number of features and 
- * and `N = (2*size + 1)`.
- * 
- * The computed feature are:
- * 
- *  1. ally = same colored stone as target
- *  2. enemy = the opposite colored stone
- *  3. neutral = the location is outside the board
- *  4. atari = the block has only one liberty
- * 
- * More features to be added, e.g. whether the
- * block can be captured in a ladder (aka the lambda-1
- * sequence), whether it can be captured with
- * a net (aka the lambda-2 sequence) and so on.
- * 
  * @param {tsumego.Board} board
  * @param {{x: number, y: number}} target
  * @param {number} size
  * @returns {number[][][]}
  */
 function features(board, target, size) {
-    const result = tensor([4, size * 2 + 1, size * 2 + 1]);
+    const result = tensor([5, size * 2 + 1, size * 2 + 1]);
 
     const FI_A = 0;
     const FI_E = 1;
     const FI_N = 2;
     const FI_1 = 3;
+    const FI_S = 4;
 
     const targetColor = tsumego.sign(board.get(target.x, target.y));
 
@@ -101,14 +72,17 @@ function features(board, target, size) {
                 result[FI_E][i][j] = 0;
                 result[FI_N][i][j] = 1;
                 result[FI_1][i][j] = 0;
+                result[FI_S][i][j] = 0;
             } else {
                 const block = board.get(x, y);
                 const nlibs = tsumego.block.libs(block);
+                const nsize = tsumego.block.size(block);
 
                 result[FI_A][i][j] = block * targetColor > 0 ? 1 : 0;
                 result[FI_E][i][j] = block * targetColor < 0 ? 1 : 0;
                 result[FI_N][i][j] = 0;
                 result[FI_1][i][j] = nlibs == 1 ? 1 : 0;
+                result[FI_S][i][j] = nsize > 1 ? 1 : 0;
             }
         }
     }

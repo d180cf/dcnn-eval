@@ -21,7 +21,7 @@ const fpsize = +process.argv[3];
 
 for (const dir of sgf.dirs) {
     for (const file of dir.problems) {
-        console.log('[-] ' + file.path);
+        console.log('\n[-] ' + file.path);
         const sgf = file + '';
         
         try {

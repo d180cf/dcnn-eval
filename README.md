@@ -31,3 +31,14 @@ uses TensorFlow to find the DCNN parameters.
 
 Once the DCNN parameters are found, it can be used in the tsumego
 solver to evaluate the board and refine the search.
+
+For now the DCNN design is simple and is taken from the ["MNIST for Experts"](https://www.tensorflow.org/get_started/mnist/pros) TensorFlow tutorial:
+
+1. The input is a set of `[11, 11, 5]` tensors where `11 x 11` is an area on the board with the target stone in the center and `5` is the number of features described above.
+2. The 1-st layer transofrms this tensor into a let's say `[5, 5, 10]` one with a convolution and max pooling. The area is shirnked to `5 x 5`, but the number of features is doubled.
+3. The 2-nd layer does the same and makes a `[2, 2, 20]` tensor.
+4. Densely-connected layer transforms the `[2, 2, 20]` tensor into a `[256]` vector.
+5. Dropout to reduce overfitting.
+6. Readout to transform the `[256]` vector into a value in the `0..1` range: the prediction whether the target group is safe.
+
+

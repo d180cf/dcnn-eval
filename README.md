@@ -26,6 +26,12 @@ More features to be implemented:
 - If the stone is surely alive, i.e. belongs to the outer wall or to an alive shape.
 - Some sort of eye-detection, heuristics and so on.
 
+Features are computed with a JS script:
+
+```
+npm run features
+```
+
 Then this set of feature tensors is fed to a Python script that
 uses TensorFlow to find the DCNN parameters.
 
@@ -41,4 +47,8 @@ For now the DCNN design is simple and is taken from the ["MNIST for Experts"](ht
 5. Dropout to reduce overfitting.
 6. Readout to transform the `[256]` vector into a value in the `0..1` range: the prediction whether the target group is safe.
 
+DCNN is trained with a Python script:
 
+```
+npm run train-nn
+```

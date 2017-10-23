@@ -8,6 +8,7 @@
     "@types/node": "8.0.46"
   },
   "scripts": {
-    "features": "node compute-features .bin/features 5"
+    "features": "node compute-features .bin/features 5",
+    "train-nn": "py adjust.py .bin/features"
   }
 }

@@ -4,6 +4,8 @@ the group cannot be captured if the opponent starts
 and can recapture any ko. If the group is safe, the player
 can tenuki. If it's not safe, a move is needed to protect it.
 
+# Features
+
 The input to the DCNN will be a list of planes with features
 or in other terms in will be a tensor of shape `[F, N, N]`
 where `F` is the number of features and `N x N` is the area
@@ -32,6 +34,14 @@ Features are computed with a JS script:
 npm run features
 ```
 
+This script reads SGF files with annotated tsumegos, solves them
+to find all subproblems, for each subproblem computes features and
+adds a label about the status of the group. The output is about
+60,000 labeled tsumegos: 50,000 for training the DCNN and another
+10,000 for testing it.
+
+# DCNN
+
 Then this set of feature tensors is fed to a Python script that
 uses TensorFlow to find the DCNN parameters.
 
@@ -52,3 +62,6 @@ DCNN is trained with a Python script:
 ```
 npm run train-nn
 ```
+
+This script reads the generated set of 60,000 tsumegos, trains the DCNN
+on the first 50,000 and uses the rest to check the DCNN's accuracy.

@@ -26,8 +26,20 @@ for (const dir of sgf.dirs) {
         
         try {
             const solver = new tsumego.Solver(sgf);
+            const board = solver.board;
+            const color = tsumego.sign(board.get(solver.target));
+            console.log('[?] solving the problem...');
+            const move = solver.solve(-color, -color);
+            const safe = tsumego.stone.color(move) * -color > 0 ? 0 : 1;            
             const [x, y] = tsumego.stone.coords(solver.target);
-            const json = JSON.stringify(features(solver.board, { x, y }, fpsize));
+            console.log('[?] computing the features...');
+            const feat = features(board, { x, y }, fpsize);
+
+            const json = JSON.stringify({
+                label: safe ? 1 : 0, // safe means the target cannot be captured
+                features: feat
+            });
+
             const respath = fspath.join(resdir, file.path).replace(/\.sgf$/, '.json');
             mkdirp.sync(fspath.dirname(respath));
             fs.writeFileSync(respath, json, 'utf8');

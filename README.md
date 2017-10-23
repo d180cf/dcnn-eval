@@ -1,7 +1,8 @@
 The idea is to build a DCNN that would answer one question:
-can this group be captured? More precisely, it will tell
-whether the group can be captured if the opponent starts
-and can recapture any ko.
+is the group safe? More precisely, it will tell whether
+the group cannot be captured if the opponent starts
+and can recapture any ko. If the group is safe, the player
+can tenuki. If it's not safe, a move is needed to protect it.
 
 The input to the DCNN will be a list of planes with features
 or in other terms in will be a tensor of shape `[F, N, N]`

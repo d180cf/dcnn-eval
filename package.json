@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "author": "d180cf",
   "dependencies": {
-    "tsumego.js": "1.0.0",
+    "tsumego.js": "1.0.1",
     "@types/node": "8.0.46"
   }
 }

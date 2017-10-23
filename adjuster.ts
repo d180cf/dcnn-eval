@@ -1,5 +1,5 @@
 import 'node';
-import tsumego from 'tsumego.js';
+import 'tsumego.js';
 
 const w = JSON.parse(process.argv[3] || null) || tsumego.sequence(7, () => Math.random() - 0.5);
 const eps = +process.argv[2] || 0.05;
@@ -67,19 +67,19 @@ console.log('adjusting positions...'); {
                 S(r),
 
                 // minimize the number of own blocks in atari
-                S(tsumego.mgen.ninatari(board, +color)),
+                S(board.natari(+color)),
 
                 // minimize/maximize the number of libs of the target
                 S(tnlibs * color * tsumego.sign(target)),
 
                 // maximize the number of own liberties
-                S(tsumego.mgen.sumlibs(board, +color)),
+                S(board.sumlibs(+color)),
 
                 // maximize the number of the opponent's blocks in atari
-                S(tsumego.mgen.ninatari(board, -color)),
+                S(board.natari(-color)),
 
                 // minimize the number of the opponent's liberties
-                S(tsumego.mgen.sumlibs(board, -color)),
+                S(board.sumlibs(-color)),
 
                 // some randomness
                 S(Math.random() - 0.5),

@@ -8,6 +8,6 @@
     "@types/node": "8.0.46"
   },
   "scripts": {
-    "features": "node parse-sgf .bin/features 5"
+    "features": "node compute-features .bin/features 5"
   }
 }

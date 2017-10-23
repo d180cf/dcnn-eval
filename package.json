@@ -3,7 +3,11 @@
   "author": "d180cf",
   "dependencies": {
     "problems": "https://github.com/d180cf/problems",
-    "tsumego.js": "1.0.1",
+    "tsumego.js": "1.0.2",
+    "mkdirp": "0.5.1",
     "@types/node": "8.0.46"
+  },
+  "scripts": {
+    "features": "node parse-sgf .bin/features 5"
   }
 }

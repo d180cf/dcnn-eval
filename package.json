@@ -4,7 +4,7 @@
   "dependencies": {
     "command-line-args": "4.0.7",
     "sgf-problems": "https://github.com/d180cf/problems#94d4a15",
-    "tsumego.js": "1.0.3",
+    "tsumego.js": "1.0.4",
     "mkdirp": "0.5.1",
     "@types/node": "8.0.46"
   },

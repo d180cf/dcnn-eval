@@ -13,34 +13,48 @@ if (process.argv.length < 4) {
 const fs = require('fs');
 const fspath = require('path');
 const mkdirp = require('mkdirp');
+const clargs = require('command-line-args');
 const sgf = require('sgf-problems');
 const tsumego = require('tsumego.js');
 
-const resdir = process.argv[2];
-const fpsize = +process.argv[3];
+const args = clargs([
+    { name: 'resdir', alias: 'd', type: String, defaultOption: true },
+    { name: 'fpsize', alias: 'n', type: Number },
+    { name: 'pattern', alias: 'p', type: String }
+]);
 
 for (const dir of sgf.dirs) {
     for (const file of dir.problems) {
+        if (args.pattern && file.path.indexOf(args.pattern) < 0)
+            continue;
+
         console.log('\n[-] ' + file.path);
         const sgf = file + '';
-        
+
         try {
+            // not all SGF files contain annotated problems
+            const sgfp = tsumego.SGF.parse(sgf);
+            if (!sgfp.steps[0].PL || !sgfp.vars.length) {
+                console.log('[!] this is not an annotated problems');
+                continue;
+            }
+
             const solver = new tsumego.Solver(sgf);
             const board = solver.board;
             const color = tsumego.sign(board.get(solver.target));
             console.log('[?] solving the problem...');
             const move = solver.solve(-color, -color);
-            const safe = tsumego.stone.color(move) * -color > 0 ? 0 : 1;            
+            const safe = tsumego.stone.color(move) * -color > 0 ? 0 : 1;
             const [x, y] = tsumego.stone.coords(solver.target);
             console.log('[?] computing the features...');
-            const feat = features(board, { x, y }, fpsize);
+            const feat = features(board, { x, y }, args.fpsize);
 
             const json = JSON.stringify({
                 label: safe ? 1 : 0, // safe means the target cannot be captured
                 features: feat
             });
 
-            const respath = fspath.join(resdir, file.path).replace(/\.sgf$/, '.json');
+            const respath = fspath.join(args.resdir, file.path).replace(/\.sgf$/, '.json');
             mkdirp.sync(fspath.dirname(respath));
             fs.writeFileSync(respath, json, 'utf8');
             console.log('[+] ' + respath);

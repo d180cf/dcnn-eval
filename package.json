@@ -2,13 +2,14 @@
   "version": "1.0.0",
   "author": "d180cf",
   "dependencies": {
+    "command-line-args": "4.0.7",
     "sgf-problems": "https://github.com/d180cf/problems",
     "tsumego.js": "1.0.3",
     "mkdirp": "0.5.1",
     "@types/node": "8.0.46"
   },
   "scripts": {
-    "features": "node compute-features .bin/features 5",
+    "features": "node compute-features -d .bin/features -n 5 -p gop",
     "train-nn": "py adjust.py .bin/features"
   }
 }

@@ -3,7 +3,7 @@
   "author": "d180cf",
   "dependencies": {
     "sgf-problems": "https://github.com/d180cf/problems",
-    "tsumego.js": "1.0.2",
+    "tsumego.js": "1.0.3",
     "mkdirp": "0.5.1",
     "@types/node": "8.0.46"
   },

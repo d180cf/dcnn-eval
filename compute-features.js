@@ -19,8 +19,11 @@ const args = clargs([
     { name: 'resdir', alias: 'd', type: String, defaultOption: true },
     { name: 'fpsize', alias: 'n', type: Number },
     { name: 'tree', alias: 't', type: Number },
+    { name: 'moves', alias: 'm', type: Number },
     { name: 'pattern', alias: 'p', type: String }
 ]);
+
+console.log(args);
 
 for (const dir of sgf.dirs) {
     for (const file of dir.problems) {
@@ -33,12 +36,12 @@ for (const dir of sgf.dirs) {
         try {
             // not all SGF files contain annotated problems
             const sgfp = tsumego.SGF.parse(sgf);
-            const plays = tsumego.stone.label.color(sgfp.steps[0].PL[0]);
+            /* const plays = tsumego.stone.label.color(sgfp.steps[0].PL[0]);
 
             if (!plays || !sgfp.vars.length) {
                 console.log('[!] this is not an annotated problems');
                 continue;
-            }
+            } */
 
             const solver = new tsumego.Solver(sgf);
             const board = solver.board;
@@ -48,10 +51,10 @@ for (const dir of sgf.dirs) {
             const move = solver.solve(-color, -color);
             const safe = tsumego.stone.color(move) * -color > 0 ? 0 : 1;
 
-            console.log('[?] building the proof tree...');
-            const tree = solver.prooftree(plays, -color, args.tree);
-            console.log(tree);
-            
+            console.log('[?] generating subproblems...');
+            const tree = maketree(sgf);
+            //console.log(tree);
+
             console.log('[?] computing the features...');
             const [x, y] = tsumego.stone.coords(solver.target);
             const feat = features(board, { x, y }, args.fpsize);
@@ -66,9 +69,114 @@ for (const dir of sgf.dirs) {
             fs.writeFileSync(respath, json, 'utf8');
             console.log('[+] ' + respath);
         } catch (err) {
-            console.log('[!] ' + err);
+            console.log('[!]', err);
         }
     }
+}
+
+/**
+ * Gets the initial position and generates a tree
+ * of moves that alter the status of the target group,
+ * i.e. if in the initial position the group is safe,
+ * this function will find moves that make the group
+ * unsafe, then it will find moves that make it back
+ * safe and so on.
+ * 
+ * The output is a tree of moves in the SGF format.
+ * 
+ * @param {string} sgf
+ * @returns {string}
+ */
+function maketree(sgf) {
+    const solver = new tsumego.Solver(sgf);
+    const board = solver.board;
+    const color = tsumego.sign(board.get(solver.target));
+
+    function isTargetSafe() {
+        const move = solver.solve(-color, -color);
+        return tsumego.stone.color(move) * color > 0;
+    }
+
+    function isTargetCaptured() {
+        return !board.get(solver.target);
+    }
+
+    function expand(root, depth, safe) {
+        // Use DFS to find the leaf nodes at the given depth.
+        // This could be avoided if leaf nodes stored the entire
+        // board state which would be possible if the solver could
+        // switch to an arbitrary position on demand. This in turn
+        // is possible as long as the new board has the same hashes:
+        // otherwise the solver's cache won't be useful.
+        if (depth > 0) {
+            let count = 0;
+
+            for (const move in root) {
+                //console.log('adding ' + move);
+                board.play(tsumego.stone.fromString(move));
+                count += expand(root[move], depth - 1, !safe);
+                board.undo();
+            }
+
+            return count;
+        }
+
+        if (isTargetCaptured())
+            return 0;
+
+        const moves = [...solver.getValidMovesFor(safe ? -color : color)];
+
+        // skip trivial positions with only a few possible moves
+        if (moves.length < args.moves)
+            return 0;
+
+        let count = 0;
+
+        // Now find moves that change the status of the target:
+        // if it's safe, find moves that make it unsafe;
+        // if it's unsafe, find moves that make it safe.
+        for (const move of moves) {
+            //console.log('trying ' + tsumego.stone.toString(move));
+            board.play(move);
+
+            if (isTargetSafe() != safe) {
+                //console.log('this move changes status');
+                root[tsumego.stone.toString(move)] = {};
+                count++;
+            }
+
+            board.undo();
+        }
+
+        return count;
+    }
+
+    // stringify({}) == ""
+    function stringify(root, depth) {
+        const variations = [];
+
+        for (const move in root) {
+            const subtree = stringify(root[move], depth + 1);
+            variations.push(';' + move + subtree);
+        }
+
+        return variations.length > 1 ?
+            variations.map(s => '\n' + ' '.repeat(depth * 4) + '(' + s + ')').join('') :
+            variations.join('');
+    }
+
+    const tree = {}; // tree["B[fi]"] = subtree
+    const safe = isTargetSafe();
+
+    for (let depth = 0; depth < args.tree; depth++) {
+        //console.log('expanding depth ' + depth);
+        const count = expand(tree, depth, safe);
+        console.log('added ' + count + ' new positions at depth ' + depth);
+        //console.log(tree);
+        if (!count) break;
+    }
+
+    return stringify(tree, 0);
 }
 
 /**

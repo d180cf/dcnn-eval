@@ -1,6 +1,4 @@
 /**
- * Usage: node parse-sgf bin/json 2
- * 
  * Input: SGF files from the `sgf-problems` module.
  * Output: JSON files with features and labels.
  */
@@ -20,6 +18,7 @@ const tsumego = require('tsumego.js');
 const args = clargs([
     { name: 'resdir', alias: 'd', type: String, defaultOption: true },
     { name: 'fpsize', alias: 'n', type: Number },
+    { name: 'tree', alias: 't', type: Number },
     { name: 'pattern', alias: 'p', type: String }
 ]);
 
@@ -34,7 +33,9 @@ for (const dir of sgf.dirs) {
         try {
             // not all SGF files contain annotated problems
             const sgfp = tsumego.SGF.parse(sgf);
-            if (!sgfp.steps[0].PL || !sgfp.vars.length) {
+            const plays = tsumego.stone.label.color(sgfp.steps[0].PL[0]);
+
+            if (!plays || !sgfp.vars.length) {
                 console.log('[!] this is not an annotated problems');
                 continue;
             }
@@ -42,11 +43,17 @@ for (const dir of sgf.dirs) {
             const solver = new tsumego.Solver(sgf);
             const board = solver.board;
             const color = tsumego.sign(board.get(solver.target));
+
             console.log('[?] solving the problem...');
             const move = solver.solve(-color, -color);
             const safe = tsumego.stone.color(move) * -color > 0 ? 0 : 1;
-            const [x, y] = tsumego.stone.coords(solver.target);
+
+            console.log('[?] building the proof tree...');
+            const tree = solver.prooftree(plays, -color, args.tree);
+            console.log(tree);
+            
             console.log('[?] computing the features...');
+            const [x, y] = tsumego.stone.coords(solver.target);
             const feat = features(board, { x, y }, args.fpsize);
 
             const json = JSON.stringify({

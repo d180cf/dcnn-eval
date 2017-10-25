@@ -10,6 +10,7 @@
   },
   "scripts": {
     "solve": "node solve --input node_modules/sgf-problems/gop/12354.sgf --output .bin/variations.sgf --depth 15 --size 7",
+    "vplay": "node vplay --input .bin/variations.sgf --output .bin/labeled/*.sgf",
     "feats": "node feats --input node_modules/sgf-problems/gop/12354.sgf --output .bin/features.json",
     "fview": "node fview --input .bin/features.json --output .bin/features.txt",
     "train": "py adjust.py .bin/features"

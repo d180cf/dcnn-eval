@@ -30,7 +30,8 @@ try {
     const tree = maketree(sgf);
 
     mkdirp.sync(fspath.dirname(args.output));
-    fs.writeFileSync(args.output, tree, 'utf8');
+    const data = board.sgf.slice(0, -1) + '\n' + tree + ')';
+    fs.writeFileSync(args.output, data, 'utf8');
 } catch (err) {
     throw err;
 }

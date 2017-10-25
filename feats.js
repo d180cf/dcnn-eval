@@ -7,7 +7,6 @@ const fs = require('fs');
 const fspath = require('path');
 const mkdirp = require('mkdirp');
 const clargs = require('command-line-args');
-const sgf = require('sgf-problems');
 const tsumego = require('tsumego.js');
 
 const args = clargs([
@@ -42,18 +41,18 @@ try {
 function features(board, target) {
     const result = tensor([5, board.size + 2, board.size + 2]); // +2 to include the wall
 
-    const FI_A = 0;
-    const FI_E = 1;
-    const FI_N = 2;
-    const FI_1 = 3;
-    const FI_S = 4;
+    const FI_N = 0; // neutral
+    const FI_A = 1; // ally
+    const FI_E = 2; // enemy
+    const FI_1 = 3; // atari
+    const FI_S = 4; // size > 1
 
     const color = tsumego.sign(board.get(target.x, target.y));
 
     for (let x = -1; x < board.size + 1; x++) {
         for (let y = -1; y < board.size + 1; y++) {
-            const i = x + 1;
-            const j = y + 1;
+            const j = x + 1;
+            const i = y + 1;
 
             if (!board.inBounds(x, y)) {
                 result[FI_A][i][j] = 0;

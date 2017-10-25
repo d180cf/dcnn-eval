@@ -7,7 +7,6 @@ const fs = require('fs');
 const fspath = require('path');
 const mkdirp = require('mkdirp');
 const clargs = require('command-line-args');
-const sgf = require('sgf-problems');
 const tsumego = require('tsumego.js');
 
 const args = clargs([

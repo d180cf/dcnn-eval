@@ -3,11 +3,6 @@
  * Output: JSON files with features and labels.
  */
 
-if (process.argv.length < 4) {
-    console.log('Missing script arguments');
-    process.exit(0);
-}
-
 const fs = require('fs');
 const fspath = require('path');
 const mkdirp = require('mkdirp');
@@ -91,6 +86,7 @@ function maketree(sgf) {
     const solver = new tsumego.Solver(sgf);
     const board = solver.board;
     const color = tsumego.sign(board.get(solver.target));
+    const cache = {}; // cache[board.hash] = isTargetSafe()
 
     function isTargetSafe() {
         const move = solver.solve(-color, -color);
@@ -112,7 +108,6 @@ function maketree(sgf) {
             let count = 0;
 
             for (const move in root) {
-                //console.log('adding ' + move);
                 board.play(tsumego.stone.fromString(move));
                 count += expand(root[move], depth - 1, !safe);
                 board.undo();
@@ -136,13 +131,19 @@ function maketree(sgf) {
         // if it's safe, find moves that make it unsafe;
         // if it's unsafe, find moves that make it safe.
         for (const move of moves) {
-            //console.log('trying ' + tsumego.stone.toString(move));
             board.play(move);
 
-            if (isTargetSafe() != safe) {
-                //console.log('this move changes status');
-                root[tsumego.stone.toString(move)] = {};
-                count++;
+            if (!cache[board.hash]) {
+                // even if the opponent is the ko master,
+                // there are cases when a ko changes the
+                // status of the target group, so it's
+                // necessary to remember seen positions
+                cache[board.hash] = true;
+
+                if (isTargetSafe() != safe) {
+                    root[tsumego.stone.toString(move)] = {};
+                    count++;
+                }
             }
 
             board.undo();
@@ -169,10 +170,8 @@ function maketree(sgf) {
     const safe = isTargetSafe();
 
     for (let depth = 0; depth < args.tree; depth++) {
-        //console.log('expanding depth ' + depth);
         const count = expand(tree, depth, safe);
         console.log('added ' + count + ' new positions at depth ' + depth);
-        //console.log(tree);
         if (!count) break;
     }
 

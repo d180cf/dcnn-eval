@@ -9,8 +9,8 @@
     "@types/node": "8.0.46"
   },
   "scripts": {
-    "solve": "node solve -d .bin/features -n 5 -p gop/12354 -t 15 -m 7",
-    "feats": "node feats",
+    "solve": "node solve --input node_modules/sgf-problems/gop/12354.sgf --output .bin/variations.sgf --depth 15 --size 7",
+    "feats": "node feats --input node_modules/sgf-problems/gop/12354.sgf --output .bin/features.json",
     "train": "py adjust.py .bin/features"
   }
 }

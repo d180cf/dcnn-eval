@@ -30,7 +30,9 @@ try {
     const tree = maketree(sgf);
 
     mkdirp.sync(fspath.dirname(args.output));
-    const data = board.sgf.slice(0, -1) + '\n' + tree + ')';
+    const data = board.sgf.slice(0, -1)
+        + 'MA' + tsumego.stone.toString(solver.target)
+        + '\n' + tree + ')';
     fs.writeFileSync(args.output, data, 'utf8');
 } catch (err) {
     throw err;

@@ -22,7 +22,9 @@ try {
         const path = args.output.replace('*', tsumego.hex(board.hash));
         console.log(path);
         mkdirp.sync(fspath.dirname(path));
-        const data = board.sgf.slice(0, -1) + 'TR' + move.slice(1) + ')';
+        const data = board.sgf.slice(0, -1)
+            + 'MA[' + sgf.steps[0].MA[0] + ']'
+            + 'TR' + move.slice(1) + ')';
         fs.writeFileSync(path, data, 'utf8');
     }
 } catch (err) {

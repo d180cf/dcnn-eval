@@ -4,20 +4,16 @@
  */
 
 const fs = require('fs');
+const glob = require('glob');
 const fspath = require('path');
 const mkdirp = require('mkdirp');
-const clargs = require('command-line-args');
 
-const args = clargs([
-    { name: 'input', type: String },
-    { name: 'output', type: String },
-]);
+const [, , input, output] = process.argv;
 
-try {
-    const features = JSON.parse(fs.readFileSync(args.input, 'utf8'));
+for (const inppath of glob.sync(input)) {
+    const outpath = output.replace('*', /(\w+)\.\w+$/.exec(inppath)[1]);
+    const features = JSON.parse(fs.readFileSync(inppath, 'utf8'));
     const text = features.map(m => m.map(a => a.map(x => x ? '#' : '-').join(' ')).join('\n')).join('\n\n');
-    mkdirp.sync(fspath.dirname(args.output));
-    fs.writeFileSync(args.output, text, 'utf8');
-} catch (err) {
-    throw err;
+    mkdirp.sync(fspath.dirname(outpath));
+    fs.writeFileSync(outpath, text, 'utf8');
 }

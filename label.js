@@ -14,8 +14,10 @@ const [, , input, output] = process.argv;
 let status0 = 0;
 let status1 = 0;
 
-for (const filepath of glob.sync(input)) {
-    const data = fs.readFileSync(filepath, 'utf8');
+for (const inppath of glob.sync(input)) {
+    const outpath = output.replace('*', /(\w+)\.\w+$/.exec(inppath)[1]);
+
+    const data = fs.readFileSync(inppath, 'utf8');
     const sgf = tsumego.SGF.parse(data);
     const board = new tsumego.Board(sgf);
 
@@ -31,9 +33,9 @@ for (const filepath of glob.sync(input)) {
     }
 
     const status = board.get(target) * board.get(lastmv) > 0 ? 1 : 0;
-    const jsonpath = output.replace('*', /(\w+)\.\w+$/.exec(filepath)[1]);
-    mkdirp.sync(fspath.dirname(jsonpath));
-    fs.writeFileSync(jsonpath, status, 'utf8');
+
+    mkdirp.sync(fspath.dirname(outpath));
+    fs.writeFileSync(outpath, status, 'utf8');
 
     if (status)
         status1++;

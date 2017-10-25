@@ -1,32 +1,29 @@
 /**
- * Input: SGF file with a tsumego.
- * Output: JSON file with features.
+ * Input: SGF files with tsumegos.
+ * Output: JSON files with features.
  */
 
 const fs = require('fs');
+const glob = require('glob');
 const fspath = require('path');
 const mkdirp = require('mkdirp');
-const clargs = require('command-line-args');
 const tsumego = require('tsumego.js');
 
-const args = clargs([
-    { name: 'input', type: String },
-    { name: 'output', type: String },
-]);
+const [, , input, output] = process.argv;
 
-try {
-    const sgf = fs.readFileSync(args.input, 'utf8');
+for (const inppath of glob.sync(input)) {
+    const outpath = output.replace('*', /(\w+)\.\w+$/.exec(inppath)[1]);
+
+    const sgf = fs.readFileSync(inppath, 'utf8');
     const solver = new tsumego.Solver(sgf);
     const board = solver.board;
     const color = tsumego.sign(board.get(solver.target));
     const [x, y] = tsumego.stone.coords(solver.target);
-    const feat = features(board, { x, y }, args.fpsize);
+    const feat = features(board, { x, y });
     const json = JSON.stringify(feat);
 
-    mkdirp.sync(fspath.dirname(args.output));
-    fs.writeFileSync(args.output, json, 'utf8');
-} catch (err) {
-    throw err;
+    mkdirp.sync(fspath.dirname(outpath));
+    fs.writeFileSync(outpath, json, 'utf8');
 }
 
 /**

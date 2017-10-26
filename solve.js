@@ -6,18 +6,17 @@
 const fs = require('fs');
 const fspath = require('path');
 const mkdirp = require('mkdirp');
-const clargs = require('command-line-args');
 const tsumego = require('tsumego.js');
 
-const args = clargs([
-    { name: 'input', type: String },
-    { name: 'output', type: String },
-    { name: 'depth', type: Number }, // max depth of the tree
-    { name: 'size', type: Number }, // min number of available moves
-]);
+const [, , input, output, maxTreeDepth, minAreaSize] = process.argv;
 
 try {
-    const sgf = fs.readFileSync(args.input, 'utf8');
+    if (fs.existsSync(output)) {
+        console.log('already exists: ' + output);
+        process.exit(0);
+    }
+
+    const sgf = fs.readFileSync(input, 'utf8');
     const solver = new tsumego.Solver(sgf);
     const board = solver.board;
     const color = tsumego.sign(board.get(solver.target));
@@ -29,11 +28,11 @@ try {
     console.log('generating subproblems...');
     const tree = maketree(sgf);
 
-    mkdirp.sync(fspath.dirname(args.output));
+    mkdirp.sync(fspath.dirname(output));
     const data = board.sgf.slice(0, -1)
         + 'MA' + tsumego.stone.toString(solver.target)
         + '\n' + tree + ')';
-    fs.writeFileSync(args.output, data, 'utf8');
+    fs.writeFileSync(output, data, 'utf8');
 } catch (err) {
     throw err;
 }
@@ -91,7 +90,7 @@ function maketree(sgf) {
         const moves = [...solver.getValidMovesFor(safe ? -color : color)];
 
         // skip trivial positions with only a few possible moves
-        if (moves.length < args.size)
+        if (moves.length < minAreaSize)
             return 0;
 
         let count = 0;
@@ -138,7 +137,7 @@ function maketree(sgf) {
     const tree = {}; // tree["B[fi]"] = subtree
     const safe = isTargetSafe();
 
-    for (let depth = 0; depth < args.depth; depth++) {
+    for (let depth = 0; depth < maxTreeDepth; depth++) {
         const count = expand(tree, depth, safe);
         console.log('added ' + count + ' new positions at depth ' + depth);
         if (!count) break;

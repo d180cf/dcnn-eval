@@ -5,12 +5,14 @@
     "command-line-args": "4.0.7",
     "sgf-problems": "https://github.com/d180cf/problems#94d4a15",
     "tsumego.js": "1.0.4",
+    "md5": "2.2.1",
     "mkdirp": "0.5.1",
     "@types/node": "8.0.46"
   },
   "scripts": {
-    "solve": "node solve --input node_modules/sgf-problems/gop/12354.sgf --output .bin/variations.sgf --depth 15 --size 7",
-    "vplay": "node vplay --input .bin/variations.sgf --output .bin/inputs/*.sgf",
+    "solve": "node solve node_modules/sgf-problems/gop/12354.sgf .bin/vars/12453.sgf 15 7",
+    "solve-all": "node solve-all .bin/vars .bin/boards",
+    "vplay": "node vplay .bin/vars/12453.sgf .bin/boards",
     "feats": "node feats .bin/inputs/*.sgf .bin/features/*.json",
     "fview": "node fview .bin/features/*.json .bin/fview/*.txt",
     "label": "node label .bin/inputs/*.sgf .bin/labels/*.json",

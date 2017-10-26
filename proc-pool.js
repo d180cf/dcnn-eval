@@ -17,7 +17,7 @@ function dequeue() {
     if (processes.length < ncpus - 1 && queue.length > 0) {
         const taskid = ++ntasks;
         const [command] = queue.splice(0, 1);
-        const log = message => console.log('[' + process.pid + ':' + taskid + '] ' + message.trim());
+        const log = message => console.log('[' + process.pid + ':' + taskid + '] ' + ('' + message).trim());
 
         const process = cp.exec(command, (error, stdout, stderr) => {
             error && log(error);
@@ -35,7 +35,7 @@ function dequeue() {
     }
 }
 
-exports.run = function run(command) {    
+exports.run = function run(command) {
     queue.push(command);
     dequeue();
     // return a promise that resolves to the process object?

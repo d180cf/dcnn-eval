@@ -139,7 +139,6 @@ function maketree(sgf) {
 
     for (let depth = 0; depth < maxTreeDepth; depth++) {
         const count = expand(tree, depth, safe);
-        console.log('added ' + count + ' new positions at depth ' + depth);
         if (!count) break;
     }
 

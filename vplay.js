@@ -5,7 +5,8 @@
  * Each subproblem has annotations:
  * 
  *  - MA[..] - the target stone
- *  - TS[.] - target status, 1 = safe, 0 = unsafe
+ *  - TS[..] - target status, 1 = safe, 0 = unsafe
+ *  - AS[..] - the number of available moves
  */
 
 const fs = require('fs');
@@ -17,16 +18,19 @@ const tsumego = require('tsumego.js');
 const [, , inputFile, outputDir] = process.argv;
 
 try {
-    const sgf = tsumego.SGF.parse(fs.readFileSync(inputFile, 'utf8'));
-    const board = new tsumego.Board(sgf);
-    const target = sgf.steps[0].MA[0];
-    const color = tsumego.sign(board.get(tsumego.stone.fromString(target)));
+    const text = fs.readFileSync(inputFile, 'utf8');
+    const sgf = tsumego.SGF.parse(text);
+    const solver = new tsumego.Solver(text);
+    const board = solver.board;
+    const target = solver.target;
+    const color = tsumego.sign(board.get(target));
 
     let nvars = 0;
     let ndups = 0;
     let nsafe = 0;
 
     for (const move of expand(board, sgf.vars)) {
+        const size = [...solver.getValidMovesFor(move[0] == 'B' ? -1 : +1)].length;
         const safe = board.get(tsumego.stone.fromString(move)) * color > 0;
         const hash = md5(board.sgf).slice(0, 7);
         const path = fspath.join(outputDir, hash + '.sgf');
@@ -41,7 +45,8 @@ try {
         } else {
             mkdirp.sync(fspath.dirname(path));
             const data = board.sgf.slice(0, -1)
-                + 'MA[' + target + ']'
+                + 'AS[' + size + ']'
+                + 'MA[' + sgf.steps[0].MA[0] + ']'
                 + 'TS[' + (safe ? 1 : 0) + '])';
             fs.writeFileSync(path, data, 'utf8');
         }

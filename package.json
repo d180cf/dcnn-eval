@@ -10,7 +10,7 @@
     "@types/node": "8.0.46"
   },
   "scripts": {
-    "solve": "node solve node_modules/sgf-problems/gop/12354.sgf .bin/test/vars.sgf 15 7",
+    "solve": "node solve node_modules/sgf-problems/gop/12354.sgf .bin/test/vars.sgf 50 0",
     "vplay": "node vplay .bin/test/vars.sgf .bin/test/subp",
     "gsubp": "node solve-all .bin/vars .bin/subp 50 0",
     "feats": "node feats .bin/inputs/*.sgf .bin/features/*.json",

@@ -1,6 +1,11 @@
 /**
  * Input: SGF file with variations.
  * Output: Labeled SGF files for all positions.
+ * 
+ * Each subproblem has annotations:
+ * 
+ *  - MA[..] - the target stone
+ *  - TS[.] - target status, 1 = safe, 0 = unsafe
  */
 
 const fs = require('fs');
@@ -14,28 +19,35 @@ const [, , inputFile, outputDir] = process.argv;
 try {
     const sgf = tsumego.SGF.parse(fs.readFileSync(inputFile, 'utf8'));
     const board = new tsumego.Board(sgf);
+    const target = sgf.steps[0].MA[0];
+    const color = tsumego.sign(board.get(tsumego.stone.fromString(target)));
 
     let nvars = 0;
     let ndups = 0;
+    let nsafe = 0;
 
     for (const move of expand(board, sgf.vars)) {
+        const safe = board.get(tsumego.stone.fromString(move)) * color > 0;
         const hash = md5(board.sgf).slice(0, 7);
         const path = fspath.join(outputDir, hash + '.sgf');
 
         nvars++;
+
+        if (safe)
+            nsafe++;
 
         if (fs.existsSync(path)) {
             ndups++;
         } else {
             mkdirp.sync(fspath.dirname(path));
             const data = board.sgf.slice(0, -1)
-                + 'MA[' + sgf.steps[0].MA[0] + ']'
-                + 'TR' + move.slice(1) + ')';
+                + 'MA[' + target + ']'
+                + 'TS[' + (safe ? 1 : 0) + '])';
             fs.writeFileSync(path, data, 'utf8');
         }
     }
 
-    console.log('vars = ' + nvars + ' dups = ' + ndups);
+    console.log('vars = ' + nvars + ' dups = ' + ndups + ' safe = ' + nsafe);
 } catch (err) {
     throw err;
 }

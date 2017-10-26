@@ -10,8 +10,8 @@
     "@types/node": "8.0.46"
   },
   "scripts": {
-    "solve": "node solve node_modules/sgf-problems/gop/12354.sgf .bin/vars/12453.sgf 15 7",
-    "vplay": "node vplay .bin/vars/12453.sgf .bin/boards",
+    "solve": "node solve node_modules/sgf-problems/gop/12354.sgf .bin/test/vars.sgf 15 7",
+    "vplay": "node vplay .bin/test/vars.sgf .bin/test/subp",
     "gsubp": "node solve-all .bin/vars .bin/subp 50 0",
     "feats": "node feats .bin/inputs/*.sgf .bin/features/*.json",
     "fview": "node fview .bin/features/*.json .bin/fview/*.txt",

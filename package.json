@@ -6,16 +6,18 @@
     "sgf-problems": "https://github.com/d180cf/problems#v2.0.1",
     "tsumego.js": "1.0.4",
     "md5": "2.2.1",
+    "glob": "7.1.2",
     "mkdirp": "0.5.1",
     "@types/node": "8.0.46"
   },
   "scripts": {
     "solve": "node solve node_modules/sgf-problems/gop/12354.sgf .bin/test/vars.sgf 50 0",
-    "vplay": "node vplay .bin/test/vars.sgf .bin/test/subp",
-    "gsubp": "node solve-all .bin/vars .bin/subp 50 0",
+    "vplay": "node vplay .bin/test/vars.sgf .bin/test/subp",    
     "feats": "node feats .bin/inputs/*.sgf .bin/features/*.json",
     "fview": "node fview .bin/features/*.json .bin/fview/*.txt",
     "label": "node label .bin/inputs/*.sgf .bin/labels/*.json",
+    "solve-all": "node solve-all .bin/variations 50 0",
+    "vplay-all": "node vplay-all .bin/variations/*.sgf .bin/subproblems",
     "train": "py adjust.py .bin/features"
   }
 }

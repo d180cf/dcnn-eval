@@ -17,6 +17,7 @@ The features are:
 - If the location is outside the board.
 - If the stone is black.
 - If the stone is white.
+- If stone belongs to the target block.
 - If the stone is in atari, i.e. it has only 1 liberty.
 - If the stone has adjcent stones of the same color.
 

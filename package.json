@@ -13,12 +13,13 @@
   "scripts": {
     "solve": "node solve node_modules/sgf-problems/gop/12354.sgf .bin/test/vars.sgf 50 0",
     "vplay": "node vplay .bin/test/vars.sgf .bin/test/subp",    
-    "feats": "node feats .bin/inputs/*.sgf .bin/features/*.json",
-    "fview": "node fview .bin/features/*.json .bin/fview/*.txt",
+    "feats": "node feats node_modules/sgf-problems/gop/12354.sgf .bin/features.json",
+    "fview": "node fview .bin/features.json .bin/features.txt",
 
     "solve-all": "node solve-all .bin/variations 50 7",
     "vplay-all": "node vplay-all .bin/variations/*.sgf .bin/subproblems",
     "check-all": "node check-all .bin/subproblems/*.sgf 0.003",
+    "feats-all": "node feats-all .bin/subproblems/*.sgf .bin/features",
 
     "train": "py dcnn.py"
   }

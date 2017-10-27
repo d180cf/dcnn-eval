@@ -1,20 +1,16 @@
 /**
- * Input: SGF files with tsumegos.
- * Output: JSON files with features.
+ * Input: SGF file with tsumego.
+ * Output: JSON file with features.
  */
 
 const fs = require('fs');
-const glob = require('glob');
-const fspath = require('path');
-const mkdirp = require('mkdirp');
+const fstext = require('./fstext');
 const tsumego = require('tsumego.js');
 
 const [, , input, output] = process.argv;
 
-for (const inppath of glob.sync(input)) {
-    const outpath = output.replace('*', /(\w+)\.\w+$/.exec(inppath)[1]);
-
-    const sgf = fs.readFileSync(inppath, 'utf8');
+(function main() {
+    const sgf = fstext.read(input);
     const solver = new tsumego.Solver(sgf);
     const board = solver.board;
     const color = tsumego.sign(board.get(solver.target));
@@ -22,9 +18,8 @@ for (const inppath of glob.sync(input)) {
     const feat = features(board, { x, y });
     const json = JSON.stringify(feat);
 
-    mkdirp.sync(fspath.dirname(outpath));
-    fs.writeFileSync(outpath, json, 'utf8');
-}
+    fstext.write(output, json, 'utf8');
+})();
 
 /**
  * Computes features of the given board
@@ -36,13 +31,15 @@ for (const inppath of glob.sync(input)) {
  * @returns {number[][][]}
  */
 function features(board, target) {
-    const result = tensor([5, board.size + 2, board.size + 2]); // +2 to include the wall
+    const tblock = board.get(target.x, target.y);
+    const result = tensor([6, board.size + 2, board.size + 2]); // +2 to include the wall
 
     const FI_N = 0; // neutral
     const FI_A = 1; // ally
     const FI_E = 2; // enemy
-    const FI_1 = 3; // atari
-    const FI_S = 4; // size > 1
+    const FI_T = 3; // target
+    const FI_1 = 4; // atari
+    const FI_S = 5; // size > 1
 
     const color = tsumego.sign(board.get(target.x, target.y));
 
@@ -54,6 +51,7 @@ function features(board, target) {
             if (!board.inBounds(x, y)) {
                 result[FI_A][i][j] = 0;
                 result[FI_E][i][j] = 0;
+                result[FI_T][i][j] = 0;
                 result[FI_N][i][j] = 1;
                 result[FI_1][i][j] = 0;
                 result[FI_S][i][j] = 0;
@@ -64,6 +62,7 @@ function features(board, target) {
 
                 result[FI_A][i][j] = block * color > 0 ? 1 : 0;
                 result[FI_E][i][j] = block * color < 0 ? 1 : 0;
+                result[FI_T][i][j] = block == tblock ? 1 : 0;
                 result[FI_N][i][j] = 0;
                 result[FI_1][i][j] = nlibs == 1 ? 1 : 0;
                 result[FI_S][i][j] = nsize > 1 ? 1 : 0;

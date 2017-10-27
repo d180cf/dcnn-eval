@@ -7,7 +7,7 @@ const [, , inputFiles, probability] = process.argv;
 
 const paths = glob.sync(inputFiles);
 
-console.log(`checking ${probability * 100 | 0} % out of ${paths.length} problems...`);
+console.log(`checking ${probability * paths.length | 0} out of ${paths.length} problems...`);
 
 let npassed = 0;
 let nfailed = 0;

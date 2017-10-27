@@ -18,7 +18,7 @@
     "label": "node label .bin/inputs/*.sgf .bin/labels/*.json",
     "solve-all": "node solve-all .bin/variations 50 7",
     "vplay-all": "node vplay-all .bin/variations/*.sgf .bin/subproblems",
-    "check-all": "node check .bin/subproblems/*.sgf 0.01",
+    "check-all": "node check-all .bin/subproblems/*.sgf 0.003",
     "train": "py adjust.py .bin/features"
   }
 }

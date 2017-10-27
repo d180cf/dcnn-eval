@@ -1,13 +1,21 @@
 /**
  * Input: SGF file with tsumego.
- * Output: JSON file with features.
+ * Output: JSON files with features and config.
  */
 
 const fs = require('fs');
+const fspath = require('path');
 const fstext = require('./fstext');
 const tsumego = require('tsumego.js');
 
-const [, , input, output] = process.argv;
+const [, , input, outputDir] = process.argv;
+
+const FI_N = 0; // neutral
+const FI_A = 1; // ally
+const FI_E = 2; // enemy
+const FI_T = 3; // target
+const FI_1 = 4; // atari
+const FI_S = 5; // size > 1
 
 (function main() {
     const sgf = fstext.read(input);
@@ -16,9 +24,20 @@ const [, , input, output] = process.argv;
     const color = tsumego.sign(board.get(solver.target));
     const [x, y] = tsumego.stone.coords(solver.target);
     const feat = features(board, { x, y });
-    const json = JSON.stringify(feat);
 
-    fstext.write(output, json, 'utf8');
+    const config = {
+        safe: +(/\bTS\[(\d+)\]/.exec(sgf) || [])[1],
+        size: board.size,
+        area: +(/\bAS\[(\d+)\]/.exec(sgf) || [])[1],
+    };
+
+    fstext.write(
+        fspath.join(outputDir, '/features.json'),
+        JSON.stringify(feat));
+
+    fstext.write(
+        fspath.join(outputDir, '/config.json'),
+        JSON.stringify(config));
 })();
 
 /**
@@ -31,16 +50,8 @@ const [, , input, output] = process.argv;
  * @returns {number[][][]}
  */
 function features(board, target) {
-    const tblock = board.get(target.x, target.y);
     const result = tensor([6, board.size + 2, board.size + 2]); // +2 to include the wall
-
-    const FI_N = 0; // neutral
-    const FI_A = 1; // ally
-    const FI_E = 2; // enemy
-    const FI_T = 3; // target
-    const FI_1 = 4; // atari
-    const FI_S = 5; // size > 1
-
+    const tblock = board.get(target.x, target.y);
     const color = tsumego.sign(board.get(target.x, target.y));
 
     for (let x = -1; x < board.size + 1; x++) {

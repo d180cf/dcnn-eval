@@ -4,6 +4,7 @@
  */
 
 const fspath = require('path');
+const glob = require('glob');
 const pool = require('./proc-pool');
 
 const [, , inputFiles, outputDir] = process.argv;

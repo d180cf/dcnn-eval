@@ -102,12 +102,13 @@ with tf.Session() as session:
     print("Evaluating DCNN...")
     print("Error: ", avg_error())
 
-    print("Training DCNN...")
-    
-    for (_labels, _images) in batches(50):
-        optimizer.run(feed_dict={
-            labels: _labels,
-            images: _images })
+    for i in range(3):
+        print("Training DCNN... #" + str(i + 1))
 
-    print("Evaluating DCNN...")
-    print("Error: ", avg_error())
+        for (_labels, _images) in batches(50):
+            optimizer.run(feed_dict={
+                labels: _labels,
+                images: _images })
+
+        print("Evaluating DCNN...")
+        print("Error: ", avg_error())

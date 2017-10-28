@@ -40,21 +40,33 @@ def maxpool(x):
 images = tf.placeholder(tf.float32, shape=[None, N, N, F])
 labels = tf.placeholder(tf.float32, shape=[None, 2])
 
-# [11, 11, 5] x [3, 3, 5, 1] -> [9, 9, 1]
-kernel_1 = weights([K, K, F, 1])
-output_1 = maxpool(tf.nn.relu(conv2d(images, kernel_1) + bias([1])))
+# [11, 11, 5] x [3, 3, 5, 32] -> [9, 9, 32]
+kernel_1 = weights([K, K, F, 32])
+output_1 = maxpool(tf.nn.relu(conv2d(images, kernel_1) + bias([32])))
 
-# [9, 9, 1] x [9*9, 7] -> [2]
-kernel_2 = weights([9*9, 2])
-output_2 = tf.matmul(tf.reshape(output_1, [-1, 9*9]), kernel_2) + bias([2])
+# [9, 9, 32] x [3, 3, 32, 32] -> [7, 7, 32]
+kernel_2 = weights([K, K, 32, 32])
+output_2 = maxpool(tf.nn.relu(conv2d(output_1, kernel_2) + bias([32])))
 
-prediction = tf.nn.softmax(output_2)
+# [7, 7, 32] x [3, 3, 32, 32] -> [5, 5, 32]
+kernel_3 = weights([K, K, 32, 32])
+output_3 = maxpool(tf.nn.relu(conv2d(output_2, kernel_3) + bias([32])))
 
-optimizer = tf.train.GradientDescentOptimizer(0.5).minimize(
+# [5, 5, 32] -> [1024]
+kernel_4 = weights([5*5*32, 1024])
+output_4 = tf.matmul(tf.reshape(output_3, [-1, 5*5*32]), kernel_4) + bias([1024])
+
+# [1024] -> [2]
+kernel_5 = weights([1024, 2]);
+output_5 = tf.matmul(output_4, kernel_5) + bias([2])
+
+prediction = tf.nn.softmax(output_5)
+
+optimizer = tf.train.AdamOptimizer(1e-4).minimize(
     tf.reduce_mean(
         tf.nn.softmax_cross_entropy_with_logits(
             labels=labels,
-            logits=output_2)))
+            logits=output_5)))
 
 with tf.Session() as session:
     session.run(tf.global_variables_initializer())

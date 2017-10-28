@@ -59,17 +59,18 @@ def batches(size, prob):
             _images = []
 
 def error():
-    sum = 0
+    wrong = 0
     count = 0
 
-    for (_labels, _images) in batches(50, 0.05): # quickly estimate error on 5% of inputs
+    for (_label, _image) in inputs(0.05): # quickly estimate error on 5% of inputs
         result = prediction.eval(feed_dict={
-            labels: _labels,
-            images: _images })
-        sum += np.mean(np.absolute(_labels[:,1] - result[:,1]))
+            labels: [_label],
+            images: [_image] })
+        if (result[0][1] > result[0][0]) != (_label[1] > _label[0]):
+            wrong += 1
         count += 1
     
-    return sum/count
+    return wrong/count
 
 def weights(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)

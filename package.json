@@ -16,11 +16,11 @@
     "feats": "node feats .bin/subproblems/62612cd.sgf .bin/features",
     "fview": "node fview .bin/features.json .bin/features.txt",
 
-    "solve-all": "node solve-all .bin/variations 50 7",
+    "solve-all": "node solve-all .bin/variations 50 0",
     "vplay-all": "node vplay-all .bin/variations/*.sgf .bin/subproblems",
-    "check-all": "node check-all .bin/subproblems/*.sgf 0.003",
+    "check-all": "node check-all .bin/subproblems/*.sgf 0.001",
     "feats-all": "node feats-all .bin/subproblems/*.sgf .bin/features",
 
-    "test": "py test.py"
+    "dcnn": "py dcnn.py"
   }
 }

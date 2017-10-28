@@ -1,88 +1,95 @@
+import os
+import json
+import numpy as np
 import tensorflow as tf
-# sgfs = <import the JSON files>
 
-def weight_variable(shape):
-  initial = tf.truncated_normal(shape, stddev=0.1)
-  return tf.Variable(initial)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-def bias_variable(shape):
-  initial = tf.constant(0.1, shape=shape)
-  return tf.Variable(initial)
+N = 11 # board frame size
+F = 5 # features
+K = 3 # kernel
 
+def inputs():
+    for name in os.listdir(".bin/features"):
+        config = json.load(open(".bin/features/" + name))
+        image = np.array(config["features"]) # [11, 11, 5] - NHWC
+        label = config["safe"]
+        yield (label, image)
+
+def weights(shape):
+        initial = tf.truncated_normal(shape, stddev=0.1)
+        return tf.Variable(initial)
+
+def bias(shape):
+    initial = tf.constant(0.1, shape=shape)
+    return tf.Variable(initial)
+
+# e.g. [?, 11, 11, 5] x [11, 11, 5, 32] -> [?, 9, 9, 32]
 def conv2d(x, W):
-  return tf.nn.conv2d(x, W,
-    strides=[1, 1, 1, 1],
-    padding='SAME')
+    return tf.nn.conv2d(x, W,
+        strides=[1, 1, 1, 1],
+        padding='VALID')
 
-def max_pool_2x2(x):
-  return tf.nn.max_pool(x,
-    ksize=[1, 2, 2, 1],
-    strides=[1, 2, 2, 1],
-    padding='SAME')
+# keeps size of the input
+def maxpool(x):
+    return tf.nn.max_pool(x,
+        ksize=[1, 2, 2, 1],
+        strides=[1, 1, 1, 1],
+        padding='SAME')
 
-# 11 x 11 areas with 5 features: keep in sycn with JS
-x_input = tf.placeholder(tf.float32, [-1, 11, 11, 5])
+images = tf.placeholder(tf.float32, shape=[None, N, N, F])
+labels = tf.placeholder(tf.float32, shape=[None, 2])
 
-# 0 = the group can be captured, 1 = the group is safe
-y_output = tf.placeholder(tf.float32, shape=[None, 1])
+# [11, 11, 5] x [3, 3, 5, 32] -> [9, 9, 32]
+kernel_1 = weights([K, K, F, 32])
+output_1 = maxpool(tf.nn.relu(conv2d(images, kernel_1) + bias([32])))
 
-# conv 1: [11, 11, 5] -> [5, 5, 10]
-W_conv1 = weight_variable([11, 11, 5, 10])
-b_conv1 = bias_variable([10])
-h_conv1 = tf.nn.relu(conv2d(x_input, W_conv1) + b_conv1)
-h_pool1 = max_pool_2x2(h_conv1)
+# [9, 9, 32] x [3, 3, 32, 32] -> [7, 7, 32]
+kernel_2 = weights([K, K, 32, 32])
+output_2 = maxpool(tf.nn.relu(conv2d(output_1, kernel_2) + bias([32])))
 
-# conv 2: [5, 5, 10] -> [2, 2, 20]
-W_conv2 = weight_variable([2, 2, 10, 20])
-b_conv2 = bias_variable([20])
-h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
-h_pool2 = max_pool_2x2(h_conv2)
+# [7, 7, 32] x [3, 3, 32, 32] -> [5, 5, 32]
+kernel_3 = weights([K, K, 32, 32])
+output_3 = maxpool(tf.nn.relu(conv2d(output_2, kernel_3) + bias([32])))
 
-# linear: [2, 2, 20] -> [256]
-W_fc1 = weight_variable([2 * 2 * 20, 256])
-b_fc1 = bias_variable([256])
-h_pool2_flat = tf.reshape(h_pool2, [-1, 2 * 2 * 20])
-h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
+# [5, 5, 32] -> [1024]
+kernel_4 = weights([5*5*32, 1024])
+output_4 = tf.matmul(tf.reshape(output_3, [-1, 5*5*32]), kernel_4) + bias([1024])
 
-# dropout
-keep_prob = tf.placeholder(tf.float32)
-h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
+# [1024] -> [2]
+kernel_5 = weights([1024, 2])
+output_5 = tf.matmul(output_4, kernel_5) + bias([2])
 
-# readout: [256] -> [1]
-W_fc2 = weight_variable([1024, 10])
-b_fc2 = bias_variable([10])
-y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
+prediction = tf.nn.softmax(output_5)
 
-cross_entropy = tf.reduce_mean(
-  tf.nn.softmax_cross_entropy_with_logits(
-    labels=y_output,
-    logits=y_conv))
+optimizer = tf.train.AdamOptimizer(1e-4).minimize(
+    tf.reduce_mean(
+        tf.nn.softmax_cross_entropy_with_logits(
+            labels=labels,
+            logits=output_5)))
 
-train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
-correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_output, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+with tf.Session() as session:
+    session.run(tf.global_variables_initializer())
 
-with tf.Session() as sess:
-  sess.run(tf.global_variables_initializer())
-  for i in range(20000):
-    batch = sgfs.train.next_batch(50)
+    print("Training DCNN...")
 
-    if i % 100 == 0:
-      train_accuracy = accuracy.eval(
-        feed_dict={
-          x_input: batch[0],
-          y_output: batch[1],
-          keep_prob: 1.0})
-      print('step %d, training accuracy %g' % (i, train_accuracy))
+    for (label, image) in inputs():
+        if (image.shape[0] == 11 and image.shape[1] == 11):
+            optimizer.run(feed_dict={
+                labels: [[1, 0] if label == 0 else [0, 1]],
+                images: [image] })
 
-    train_step.run(
-      feed_dict={
-        x_input: batch[0],
-        y_output: batch[1],
-        keep_prob: 0.5})
+    print("Evaluating DCNN...")
+    sum = 0
+    count = 0
 
-  print('test accuracy %g' % accuracy.eval(
-    feed_dict={
-      x_input: sgfs.test.features,
-      y_output: sgfs.test.labels,
-      keep_prob: 1.0}))
+    for (label, image) in inputs():
+        if (image.shape[0] == 11 and image.shape[1] == 11):
+            result = prediction.eval(feed_dict={
+                labels: [[1, 0] if label == 0 else [0, 1]],
+                images: [image] })
+            sum += (label - result[0][1])**2
+            count += 1
+    
+    print("Error:", (sum / count)**0.5)
+

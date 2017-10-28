@@ -18,8 +18,11 @@ function dequeue() {
         const taskid = ++ntasks;
         const [command] = queue.splice(0, 1);
         const log = message => console.log('[' + process.pid + ':' + taskid + '] ' + ('' + message).trim());
+        const _ts_0 = Date.now();
 
         const process = cp.exec(command, (error, stdout, stderr) => {
+            const _ts_1 = Date.now();
+            log(`exited; duration: ${_ts_1 - _ts_0} ms`);
             error && log(error);
             stderr && log(stderr);
             processes.splice(processes.indexOf(process), 1);

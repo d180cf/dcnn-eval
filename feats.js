@@ -8,7 +8,7 @@ const fspath = require('path');
 const fstext = require('./fstext');
 const tsumego = require('tsumego.js');
 
-const [, , input, output] = process.argv;
+exports.compute = compute;
 
 const FI_N = 0; // neutral
 const FI_A = 1; // ally
@@ -17,7 +17,7 @@ const FI_1 = 3; // atari
 const FI_S = 4; // size > 1
 const _F_N = 5; // number of features
 
-(function main() {
+function compute(input, output) {
     const sgf = fstext.read(input);
     const solver = new tsumego.Solver(sgf);
     const board = solver.board;
@@ -36,7 +36,7 @@ const _F_N = 5; // number of features
     };
 
     fstext.write(output, JSON.stringify(config));
-})();
+}
 
 /**
  * Computes features of the given board

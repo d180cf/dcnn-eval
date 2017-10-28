@@ -5,11 +5,15 @@
 
 const fspath = require('path');
 const glob = require('glob');
-const pool = require('./proc-pool');
+const feats = require('./feats');
 
 const [, , inputFiles, outputDir] = process.argv;
 
-for (const path of glob.sync(inputFiles)) {
+console.log('Getting the list of files...');
+const paths = glob.sync(inputFiles);
+
+paths.forEach((path, index) => {
+    process.stdout.write(`${index / paths.length * 100 | 0} % = ${index} / ${paths.length}\r`);
     const name = fspath.basename(path, fspath.extname(path)) + '.json';
-    pool.run(`node feats ${path} ${fspath.join(outputDir, name)}`);
-}
+    feats.compute(path, fspath.join(outputDir, name)); // takes about 20 ms x 500 K files
+});

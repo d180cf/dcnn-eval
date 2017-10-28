@@ -36,20 +36,21 @@ def testnn(_label, _image):
         return tf.nn.max_pool(x,
             ksize=[1, 2, 2, 1],
             strides=[1, 1, 1, 1],
-            padding='SAME')    
+            padding='SAME')
 
     images = tf.placeholder(tf.float32, shape=[None, N, N, F])
-    kernel = weights([K, K, F, 1])
-    output = maxpool(tf.nn.relu(conv2d(images, kernel) + bias([1])))
+
+    # [11, 11, 5] x [3, 3, 5, 1] -> [9, 9, 1]
+    kernel_1 = weights([K, K, F, 1])
+    output_1 = maxpool(tf.nn.relu(conv2d(images, kernel_1) + bias([1])))
+
+    # [9, 9, 1] x [9*9, 7] -> [3]
+    kernel_2 = weights([9*9, 3])
+    output_2 = tf.matmul(tf.reshape(output_1, [-1, 9*9]), kernel_2) + bias([3])
 
     with tf.Session() as session:
         session.run(tf.global_variables_initializer())
-
-        result = output.eval(feed_dict={
-            images: [_image]
-        })
-
-        return np.reshape(result, [N - K + 1, N - K + 1])
+        return output_2.eval(feed_dict={ images: [_image] })
 
 for (label, image) in inputs():
     print("image.shape:", image.shape)

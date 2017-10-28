@@ -127,16 +127,12 @@ optimizer = tf.train.AdamOptimizer(1e-4).minimize(
 with tf.Session() as session:
     session.run(tf.global_variables_initializer())
 
-    print("Evaluating DCNN...")
-    print("Error: ", error())
+    print("Error: %.2f" % (error()))
 
-    for i in range(100):
-        print("Training DCNN... #" + str(i + 1))
-
-        for (_labels, _images) in batches(50, 0.5): # pick random 50% of inputs to train DCNN
+    for i in range(1000):
+        for (_labels, _images) in batches(50, 0.25):
             optimizer.run(feed_dict={
                 labels: _labels,
                 images: _images })
 
-        print("Evaluating DCNN...")
-        print("Error: ", error())
+        print("Error: %.2f epoch %d" % (error(), i + 1))

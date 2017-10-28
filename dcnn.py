@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import numpy as np
 import tensorflow as tf
@@ -14,11 +15,38 @@ def inputs():
         config = json.load(open(".bin/features/" + name))
         image = np.array(config["features"]) # [11, 11, 5] - NHWC
         label = config["safe"]
-        yield (label, image)
+        yield ([1, 0] if label == 0 else [0, 1], image)
+
+def batches(size):
+    _labels = []
+    _images = []
+
+    for (label, image) in inputs():        
+        if (image.shape[0] == 11 and image.shape[1] == 11):            
+            _labels.append(label)
+            _images.append(image)
+
+        if (len(_labels) == size):
+            yield (np.array(_labels), np.array(_images))
+            _labels = []
+            _images = []
+
+def avg_error():
+    sum = 0
+    count = 0
+
+    for (_labels, _images) in batches(50):        
+        result = prediction.eval(feed_dict={
+            labels: _labels,
+            images: _images })
+        sum += np.mean(np.absolute(_labels[:,1] - result[:,1]))
+        count += 1
+    
+    return sum/count
 
 def weights(shape):
-        initial = tf.truncated_normal(shape, stddev=0.1)
-        return tf.Variable(initial)
+    initial = tf.truncated_normal(shape, stddev=0.1)
+    return tf.Variable(initial)
 
 def bias(shape):
     initial = tf.constant(0.1, shape=shape)
@@ -71,25 +99,15 @@ optimizer = tf.train.AdamOptimizer(1e-4).minimize(
 with tf.Session() as session:
     session.run(tf.global_variables_initializer())
 
-    print("Training DCNN...")
+    print("Evaluating DCNN...")
+    print("Error: ", avg_error())
 
-    for (label, image) in inputs():
-        if (image.shape[0] == 11 and image.shape[1] == 11):
-            optimizer.run(feed_dict={
-                labels: [[1, 0] if label == 0 else [0, 1]],
-                images: [image] })
+    print("Training DCNN...")
+    
+    for (_labels, _images) in batches(50):
+        optimizer.run(feed_dict={
+            labels: _labels,
+            images: _images })
 
     print("Evaluating DCNN...")
-    sum = 0
-    count = 0
-
-    for (label, image) in inputs():
-        if (image.shape[0] == 11 and image.shape[1] == 11):
-            result = prediction.eval(feed_dict={
-                labels: [[1, 0] if label == 0 else [0, 1]],
-                images: [image] })
-            sum += (label - result[0][1])**2
-            count += 1
-    
-    print("Error:", (sum / count)**0.5)
-
+    print("Error: ", avg_error())

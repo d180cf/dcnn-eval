@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import numpy as np
+import random
 import tensorflow as tf
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -10,28 +11,47 @@ N = 11 # board frame size
 F = 5 # features
 K = 3 # kernel
 
+# returns tensor[xmin..xmax, ymin..ymax] with zero padding
+def submatrix(tensor, xmin, xmax, ymin, ymax):
+    (width, height, depth) = tensor.shape
+    result = np.zeros((xmax - xmin + 1, ymax - ymin + 1, depth))
+
+    x1 = max(xmin, 0)
+    x2 = min(xmax, width - 1)
+    y1 = max(ymin, 0)
+    y2 = min(ymax, height - 1)
+
+    result[x1 - xmin : x2 - xmin + 1, y1 - ymin : y2 - ymin + 1] = tensor[x1 : x2 + 1, y1 : y2 + 1]
+    
+    return result
+
 def inputs():
     for name in os.listdir(".bin/features"):
         config = json.load(open(".bin/features/" + name))
-        image = np.array(config["features"]) # [11, 11, 5] - NHWC
+        target = np.array(config["target"]) # [M, 2] - a list of (x, y) coords
+        image = np.array(config["features"]) # [board.size + 2, board.size + 2, 5] - NHWC
         label = config["safe"]
-        yield ([1, 0] if label == 0 else [0, 1], image)
+
+        [tx, ty] = random.choice(target)
+        
+        yield (
+            [1, 0] if label == 0 else [0, 1],
+            submatrix(image, tx - N//2, tx + N//2, ty - N//2, ty + N//2))
 
 def batches(size):
     _labels = []
     _images = []
 
-    for (label, image) in inputs():        
-        if (image.shape[0] == 11 and image.shape[1] == 11):            
-            _labels.append(label)
-            _images.append(image)
+    for (label, image) in inputs():
+        _labels.append(label)
+        _images.append(image)
 
         if (len(_labels) == size):
             yield (np.array(_labels), np.array(_images))
             _labels = []
             _images = []
 
-def avg_error():
+def error():
     sum = 0
     count = 0
 
@@ -100,7 +120,7 @@ with tf.Session() as session:
     session.run(tf.global_variables_initializer())
 
     print("Evaluating DCNN...")
-    print("Error: ", avg_error())
+    print("Error: ", error())
 
     for i in range(3):
         print("Training DCNN... #" + str(i + 1))
@@ -111,4 +131,4 @@ with tf.Session() as session:
                 images: _images })
 
         print("Evaluating DCNN...")
-        print("Error: ", avg_error())
+        print("Error: ", error())

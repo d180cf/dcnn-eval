@@ -7,31 +7,30 @@ can tenuki. If it's not safe, a move is needed to protect it.
 # Features
 
 The input to the DCNN will be a list of planes with features
-or in other terms in will be a tensor of shape `[F, N, N]`
+or in other terms in will be a tensor of shape `[N, N, F]`
 where `F` is the number of features and `N x N` is the area
-that these features are computed for. Each `N x N` frame is
-a matrix composed of `0`s and `1`s only.
+that these features are computed for. A reasonable choice would
+be `11 x 11` or `9 x 9` because most tsumegos fit in this area.
 
 The features are:
 
-- If the location is outside the board.
-- If the stone is black.
-- If the stone is white.
-- If stone belongs to the target block.
-- If the stone is in atari, i.e. it has only 1 liberty.
-- If the stone has adjcent stones of the same color.
+- location is outside the board
+- stone is black
+- stone is white
+- stone is in atari, i.e. it has only 1 liberty
+- stone has adjcent stones of the same color
 
 More features to be implemented:
 
-- If the stone can be captured in a ladder (aka the lambda-1 sequence).
-- If the stone can be captured with a net (aka the lambda-2 sequence).
-- If this location is the center of a nakade shape.
-- If the stone is surely alive, i.e. belongs to the outer wall or to an alive shape.
-- Some sort of eye-detection, heuristics and so on.
+- stone can be captured in a ladder (aka the lambda-1 sequence)
+- stone can be captured with a net (aka the lambda-2 sequence)
+- location is the center of a nakade shape
+- safe group, i.e. stone belongs to the outer wall or to an alive shape
+- some sort of eye-detection, heuristics and so on
 
 # DCNN
 
-Then this set of feature tensors is fed to a Python script that
+This set of feature tensors is fed to a Python script that
 uses TensorFlow to find the DCNN parameters.
 
 Once the DCNN parameters are found, it can be used in the tsumego

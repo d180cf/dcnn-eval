@@ -10,6 +10,6 @@ const pool = require('./proc-pool');
 const [, , inputFiles, outputDir] = process.argv;
 
 for (const path of glob.sync(inputFiles)) {
-    const name = /(\w+)\.\w+$/.exec(path)[1];
+    const name = fspath.basename(path, fspath.extname(path)) + '.json';
     pool.run(`node feats ${path} ${fspath.join(outputDir, name)}`);
 }

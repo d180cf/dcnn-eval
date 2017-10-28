@@ -21,6 +21,6 @@
     "check-all": "node check-all .bin/subproblems/*.sgf 0.003",
     "feats-all": "node feats-all .bin/subproblems/*.sgf .bin/features",
 
-    "train": "py dcnn.py"
+    "test-nn": "py test.py"
   }
 }

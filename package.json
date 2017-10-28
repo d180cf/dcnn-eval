@@ -21,6 +21,9 @@
     "check-all": "node check-all .bin/subproblems/*.sgf 0.001",
     "feats-all": "node feats-all .bin/subproblems/*.sgf .bin/features",
 
+    "pack-problems": "node pack .bin/subproblems/*.sgf .bin/subproblems.log",
+    "pack-features": "node pack .bin/features/*.json .bin/features.log",
+
     "dcnn": "py dcnn.py"
   }
 }

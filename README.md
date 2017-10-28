@@ -34,16 +34,17 @@ This set of feature tensors is fed to a Python script that uses
 [TensorFlow](https://github.com/tensorflow/tensorflow) to find the DCNN parameters. Once the DCNN parameters are found, they can be exported to a file and the tsumego solver can use [keras.js](https://github.com/transcranial/keras-js)
 to evaluate the board and refine the search.
 
-For now the DCNN design is simple and mimics convnets for recognizing letters:
+For now the DCNN design is simple and mimics convnets for [recognizing letters](https://www.tensorflow.org/get_started/mnist/pros):
 
-1. A conv layer with `[3, 3]` kernel to map a `[11, 11, 5]` feature tensor to a `[9, 9, 32]` one.
-2. Another conv layer with `[3, 3]` kernel to get a `[7, 7, 32]` tensor.
-4. A densely-connected layer to get a `[7*7*32]` vector.
-5. Dropout to reduce overfitting.
-6. Readout to get a single value in the `0..1` range: the prediction whether the target is safe.
+1. Conv layer #1 with `[3, 3]` kernel to map a `[11, 11, 5]` feature tensor to a `[9, 9, 32]` one.
+2. Conv layer #2 with `[3, 3]` kernel to get a `[7, 7, 32]` tensor.
+3. Conv layer #3 with `[3, 3]` kernel to get a `[5, 5, 32]` tensor.
+4. A densely-connected layer to get a `[1024]` vector.
+5. Readout to get a `[2]` vector: the prediction whether the target is safe.
 
-This is also explained in the ["MNIST for Experts"](https://www.tensorflow.org/get_started/mnist/pros)
-tutrial.
+The error rate of this DCNN is 35% (the error rate of a random number generator is 50% since there are only two outputs).
+
+There is also a [paper](http://www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf) describing a DCNN that has accuracy rate 97% in evaluating tsumego status.
 
 # How inputs to DCNN are generated
 

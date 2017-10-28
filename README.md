@@ -31,8 +31,7 @@ More features to be implemented:
 
 # DCNN
 
-Then this set of feature tensors is fed to a Python script that
-uses TensorFlow to find the DCNN parameters.
+Then this set of feature tensors is fed to a Python script that uses [TensorFlow](https://github.com/tensorflow/tensorflow) to find the DCNN parameters.
 
 Once the DCNN parameters are found, it can be used in the tsumego
 solver to evaluate the board and refine the search.
@@ -45,6 +44,8 @@ For now the DCNN design is simple and is taken from the ["MNIST for Experts"](ht
 4. Densely-connected layer transforms the `[2, 2, 20]` tensor into a `[256]` vector.
 5. Dropout to reduce overfitting.
 6. Readout to transform the `[256]` vector into a value in the `0..1` range: the prediction whether the target group is safe.
+
+Then DCNN can be exported to a file and [keras.js](https://github.com/transcranial/keras-js) can be used to apply the DCNN in web.
 
 # How inputs to DCNN are generated
 

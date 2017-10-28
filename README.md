@@ -30,20 +30,23 @@ More features to be implemented:
 
 # DCNN
 
-This set of feature tensors is fed to a Python script that
-uses TensorFlow to find the DCNN parameters.
+Then this set of feature tensors is fed to a Python script that uses
+[TensorFlow](https://github.com/tensorflow/tensorflow) to find the DCNN parameters.
 
-Once the DCNN parameters are found, it can be used in the tsumego
-solver to evaluate the board and refine the search.
+Once the DCNN parameters are found, they can be exported to a file and
+the tsumego solver can use [keras.js](https://github.com/transcranial/keras-js)
+to evaluate the board and refine the search.
 
-For now the DCNN design is simple and is taken from the ["MNIST for Experts"](https://www.tensorflow.org/get_started/mnist/pros) TensorFlow tutorial:
+For now the DCNN design is simple and mimics convnets for recognizing letters:
 
-1. The input is a set of `[11, 11, 5]` tensors where `11 x 11` is an area on the board with the target stone in the center and `5` is the number of features described above.
-2. The 1-st layer transofrms this tensor into a let's say `[5, 5, 10]` one with a convolution and max pooling. The area is shirnked to `5 x 5`, but the number of features is doubled.
-3. The 2-nd layer does the same and makes a `[2, 2, 20]` tensor.
-4. Densely-connected layer transforms the `[2, 2, 20]` tensor into a `[256]` vector.
+1. A conv layer with `[3, 3]` kernel to map `[11, 11, 5]` feature tensor to a `[9, 9, 32]` one.
+2. Another conv layer with `[3, 3]` kernel to get a `[7, 7, 32]` tensor.
+4. A densely-connected layer to get a `[7*7*32]` vector.
 5. Dropout to reduce overfitting.
-6. Readout to transform the `[256]` vector into a value in the `0..1` range: the prediction whether the target group is safe.
+6. Readout to get a single value in the `0..1` range: the prediction whether the target is safe.
+
+This is also explained in the ["MNIST for Experts"](https://www.tensorflow.org/get_started/mnist/pros)
+tutrial.
 
 # How inputs to DCNN are generated
 

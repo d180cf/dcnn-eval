@@ -80,10 +80,16 @@ with tf.Session() as session:
                 images: [image] })
 
     print("Evaluating DCNN...")
+    sum = 0
+    count = 0
 
     for (label, image) in inputs():
         if (image.shape[0] == 11 and image.shape[1] == 11):
             result = prediction.eval(feed_dict={
                 labels: [[1, 0] if label == 0 else [0, 1]],
                 images: [image] })
-            print(label, image.shape, result)
+            sum += (label - result[0][1])**2
+            count += 1
+    
+    print("Error:", (sum / count)**0.5)
+

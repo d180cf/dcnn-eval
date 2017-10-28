@@ -5,6 +5,10 @@ import tensorflow as tf
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
+N = 11 # board frame size
+F = 5 # features
+K = 3 # kernel
+
 def inputs():
     for name in os.listdir(".bin/features"):
         config = json.load(open(".bin/features/" + name))
@@ -13,19 +17,39 @@ def inputs():
         yield (label, image)
 
 def testnn(_label, _image):
-    images = tf.placeholder(tf.float32, shape=[1, 11, 11, 5])
-    kernel = tf.random_normal(dtype=tf.float32, shape=[3, 3, 5, 1])
+    def weights(shape):
+        initial = tf.truncated_normal(shape, stddev=0.1)
+        return tf.Variable(initial)
 
-    output = tf.nn.conv2d(images, kernel,
-        strides=[1, 1, 1, 1],
-        padding='VALID')
+    def bias(shape):
+        initial = tf.constant(0.1, shape=shape)
+        return tf.Variable(initial)
+
+    # e.g. [?, 11, 11, 5] x [11, 11, 5, 32] -> [?, 9, 9, 32]
+    def conv2d(x, W):
+        return tf.nn.conv2d(x, W,
+            strides=[1, 1, 1, 1],
+            padding='VALID')
+
+    # keeps size of the input
+    def maxpool(x):
+        return tf.nn.max_pool(x,
+            ksize=[1, 2, 2, 1],
+            strides=[1, 1, 1, 1],
+            padding='SAME')    
+
+    images = tf.placeholder(tf.float32, shape=[None, N, N, F])
+    kernel = weights([K, K, F, 1])
+    output = maxpool(tf.nn.relu(conv2d(images, kernel) + bias([1])))
 
     with tf.Session() as session:
-        result = session.run(output, feed_dict={
+        session.run(tf.global_variables_initializer())
+
+        result = output.eval(feed_dict={
             images: [_image]
         })
 
-        return np.reshape(result, [9, 9])
+        return np.reshape(result, [N - K + 1, N - K + 1])
 
 for (label, image) in inputs():
     print("image.shape:", image.shape)

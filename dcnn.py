@@ -132,7 +132,7 @@ with tf.Session() as session:
     for i in range(100):
         print("Training DCNN... #" + str(i + 1))
 
-        for (_labels, _images) in batches(50, 0.25): # pick random 25% of inputs to train DCNN
+        for (_labels, _images) in batches(50, 0.5): # pick random 50% of inputs to train DCNN
             optimizer.run(feed_dict={
                 labels: _labels,
                 images: _images })

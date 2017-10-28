@@ -25,24 +25,31 @@ def submatrix(tensor, xmin, xmax, ymin, ymax):
     
     return result
 
-def inputs():
+def inputs(prob):
     for name in os.listdir(".bin/features"):
+        if random.random() > prob: # pick only 10% of the inputs
+            continue
+
         config = json.load(open(".bin/features/" + name))
         target = np.array(config["target"]) # [M, 2] - a list of (x, y) coords
         image = np.array(config["features"]) # [board.size + 2, board.size + 2, 5] - NHWC
         label = config["safe"]
+        [tx, ty] = random.choice(target)        
+        frame = submatrix(image, tx - N//2, tx + N//2, ty - N//2, ty + N//2)
 
-        [tx, ty] = random.choice(target)
+        # the result is invariant wrt transposition and rotation
+        if (random.randint(0, 1) == 1): 
+            frame = frame.transpose((1, 0, 2))
+        for i in range(random.randint(0, 3)):
+            frame = np.rot90(frame)
         
-        yield (
-            [1, 0] if label == 0 else [0, 1],
-            submatrix(image, tx - N//2, tx + N//2, ty - N//2, ty + N//2))
+        yield ([1, 0] if label == 0 else [0, 1], frame)
 
-def batches(size):
+def batches(size, prob):
     _labels = []
     _images = []
 
-    for (label, image) in inputs():
+    for (label, image) in inputs(prob):
         _labels.append(label)
         _images.append(image)
 
@@ -55,7 +62,7 @@ def error():
     sum = 0
     count = 0
 
-    for (_labels, _images) in batches(50):        
+    for (_labels, _images) in batches(50, 0.05): # quickly estimate error on 5% of inputs
         result = prediction.eval(feed_dict={
             labels: _labels,
             images: _images })
@@ -122,10 +129,10 @@ with tf.Session() as session:
     print("Evaluating DCNN...")
     print("Error: ", error())
 
-    for i in range(3):
+    for i in range(100):
         print("Training DCNN... #" + str(i + 1))
 
-        for (_labels, _images) in batches(50):
+        for (_labels, _images) in batches(50, 0.25): # pick random 25% of inputs to train DCNN
             optimizer.run(feed_dict={
                 labels: _labels,
                 images: _images })

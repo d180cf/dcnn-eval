@@ -25,15 +25,28 @@ def submatrix(tensor, xmin, xmax, ymin, ymax):
     
     return result
 
-def inputs(prob):
+def get_configs(min_area_size):
     for name in os.listdir(".bin/features"):
+        config = json.load(open(".bin/features/" + name))
+        areasize = config["area"]
+
+        if areasize < min_area_size: # skip too easy problems
+            continue
+
+        yield config
+
+print("Parsing JSON files...")
+configs = [x for x in get_configs(8)] # preload all the relevant JSON files
+print("configs: %d" % (len(configs)))
+
+def inputs(prob):
+    for config in configs:
         if random.random() > prob: # pick only 10% of the inputs
             continue
 
-        config = json.load(open(".bin/features/" + name))
         target = np.array(config["target"]) # [M, 2] - a list of (x, y) coords
         image = np.array(config["features"]) # [board.size + 2, board.size + 2, 5] - NHWC
-        label = config["safe"]
+        label = config["safe"]        
         [tx, ty] = random.choice(target)        
         frame = submatrix(image, tx - N//2, tx + N//2, ty - N//2, ty + N//2)
 

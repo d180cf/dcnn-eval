@@ -18,7 +18,9 @@ for (const path of glob.sync(input)) {
     total++;
 }
 
+console.log(`size safe unsafe`);
+
 for (let n = 0; n < stats.length; n++) {
-    const [safe, unsafe, unknown] = stats[n];
-    console.log(`size=${n} safe=${safe} unsafe=${unsafe} unknown=${unknown}`);
+    const [safe, unsafe] = stats[n];
+    console.log(`${n} ${safe} ${unsafe}`);
 }

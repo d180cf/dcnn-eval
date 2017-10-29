@@ -40,7 +40,8 @@ For now the DCNN design is simple and mimics convnets for [recognizing letters](
 2. Conv layer #2 with `[3, 3]` kernel to get a `[7, 7, 32]` tensor.
 3. Conv layer #3 with `[3, 3]` kernel to get a `[5, 5, 32]` tensor.
 4. A densely-connected layer to get a `[1024]` vector.
-5. Readout to get a `[2]` vector: the prediction whether the target is safe.
+5. Dropout to reduce overfitting.
+6. Readout to get a `[2]` vector: the prediction whether the target is safe.
 
 The error rate of this DCNN is 20% (the error rate of a random number generator is 50% since there are only two outputs).
 

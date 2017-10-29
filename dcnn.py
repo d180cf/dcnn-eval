@@ -77,6 +77,7 @@ def error():
 
     for (_label, _image) in inputs(0.05): # quickly estimate error on 5% of inputs
         result = prediction.eval(feed_dict={
+            keep_prob: 1.0,
             labels: [_label],
             images: [_image] })
         if (result[0][1] > result[0][0]) != (_label[1] > _label[0]):
@@ -125,9 +126,13 @@ output_3 = maxpool(tf.nn.relu(conv2d(output_2, kernel_3) + bias([32])))
 kernel_4 = weights([5*5*32, 1024])
 output_4 = tf.matmul(tf.reshape(output_3, [-1, 5*5*32]), kernel_4) + bias([1024])
 
+# dropout: [1024] -> [1024]
+keep_prob = tf.placeholder(tf.float32)
+output_d = tf.nn.dropout(output_4, keep_prob)
+
 # [1024] -> [2]
 kernel_5 = weights([1024, 2])
-output_5 = tf.matmul(output_4, kernel_5) + bias([2])
+output_5 = tf.matmul(output_d, kernel_5) + bias([2])
 
 prediction = tf.nn.softmax(output_5)
 
@@ -145,6 +150,7 @@ with tf.Session() as session:
     for i in range(1000):
         for (_labels, _images) in batches(50, 0.25):
             optimizer.run(feed_dict={
+                keep_prob: 0.5,
                 labels: _labels,
                 images: _images })
 

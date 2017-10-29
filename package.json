@@ -24,6 +24,8 @@
     "pack-problems": "node pack .bin/subproblems/*.sgf .bin/subproblems.log",
     "pack-features": "node pack .bin/features/*.json .bin/features.log",
 
+    "stats": "node stats .bin/subproblems/*.sgf",
+
     "dcnn": "py dcnn.py"
   }
 }

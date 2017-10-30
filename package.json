@@ -18,14 +18,14 @@
 
     "solve-all": "node solve-all .bin/solutions 20 7",
     "vplay-all": "node vplay-all .bin/solutions/*.sgf .bin/problems",
-    "check-all": "node check-all .bin/problems/*.sgf 0.001",
-    "feats-all": "node feats-all .bin/problems/*.sgf .bin/features",
+    "validate": "node check-all .bin/problems/*.sgf 0.001",
+    "features": "node feats-all .bin/problems/*.sgf .bin/features",
 
     "pack-problems": "node pack .bin/problems/*.sgf .bin/problems.log",
     "pack-features": "node pack .bin/features/*.json .bin/features.log",
 
     "stats": "node stats .bin/problems/*.sgf",
 
-    "dcnn": "py dcnn.py"
+    "dcnn": "py dcnn.py 5"
   }
 }

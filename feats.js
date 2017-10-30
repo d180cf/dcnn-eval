@@ -13,23 +13,9 @@ exports.compute = compute;
 const F_WALL = 0;
 const F_ALLY = 1;
 const F_ENEMY = 2;
-const F_VACANT = 3;
-
-const F_LIBS_1 = 4;
-const F_LIBS_2 = 5;
-const F_LIBS_3 = 6;
-const F_LIBS_4 = 7;
-const F_LIBS_5 = 8;
-const F_LIBS_X = 9;
-
-const F_SIZE_1 = 10;
-const F_SIZE_2 = 11;
-const F_SIZE_3 = 12;
-const F_SIZE_4 = 13;
-const F_SIZE_5 = 14;
-const F_SIZE_X = 15;
-
-const F_COUNT = 16; // number of features
+const F_ATARI = 3;
+const F_SIZE_1 = 4;
+const F_COUNT = 5; // number of features
 
 function compute(input, output) {
     const sgf = fstext.read(input);
@@ -79,21 +65,8 @@ function features(board, target) {
 
                 result[i][j][F_ALLY] = block * color > 0 ? 1 : 0;
                 result[i][j][F_ENEMY] = block * color < 0 ? 1 : 0;
-                result[i][j][F_VACANT] = block ? 0 : 1;
-
-                result[i][j][F_LIBS_1] = nlibs == 1 ? 1 : 0;
-                result[i][j][F_LIBS_2] = nlibs == 2 ? 1 : 0;
-                result[i][j][F_LIBS_3] = nlibs == 3 ? 1 : 0;
-                result[i][j][F_LIBS_4] = nlibs == 4 ? 1 : 0;
-                result[i][j][F_LIBS_5] = nlibs == 5 ? 1 : 0;
-                result[i][j][F_LIBS_X] = nlibs >= 6 ? 1 : 0;
-
+                result[i][j][F_ATARI] = nlibs == 1 ? 1 : 0;
                 result[i][j][F_SIZE_1] = nsize == 1 ? 1 : 0;
-                result[i][j][F_SIZE_2] = nsize == 2 ? 1 : 0;
-                result[i][j][F_SIZE_3] = nsize == 3 ? 1 : 0;
-                result[i][j][F_SIZE_4] = nsize == 4 ? 1 : 0;
-                result[i][j][F_SIZE_5] = nsize == 5 ? 1 : 0;
-                result[i][j][F_SIZE_X] = nsize >= 6 ? 1 : 0;
             }
         }
     }

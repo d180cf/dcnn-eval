@@ -89,13 +89,13 @@ size   safe unsafe
 Boards with too few available moves can be ignored as it's easier to run the usual DFS will be faster on such boards. There are about 80K boards with 7+ available moves - a good enough training set.
 
 ```
-npm run check-all
+npm run validate
 ```
 
 Verifies the `TS[1]` labels. It picks a small percentage of SGF files, solves them and checks if the status is correct. This step is optional.
 
 ```
-npm run feats-all
+npm run features
 ```
 
 Computes features for all subproblems. It outputs a JSON file with feature planes and metadata for each subproblem. The feature planes tensor has the shape of `[board.size + 2, board.size + 2, F]` where `F` is the number of features. The point is to later extract `N x N x F` subtensors. These JSON files will be then read by the Python script.

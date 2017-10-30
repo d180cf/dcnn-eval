@@ -9,7 +9,7 @@ import tensorflow as tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 N = 11 # board frame size
-F = 16 # features
+F = int(sys.argv[1]) # features
 K = 3 # kernel
 
 # returns tensor[xmin..xmax, ymin..ymax] with zero padding

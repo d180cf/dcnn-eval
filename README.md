@@ -31,10 +31,14 @@ More features to be implemented:
 # DCNN
 
 This set of feature tensors is fed to a Python script that uses
-[TensorFlow](https://github.com/tensorflow/tensorflow) to find the DCNN parameters. Once the DCNN parameters are found, they can be exported to a file and the tsumego solver can use [keras.js](https://github.com/transcranial/keras-js)
-to evaluate the board and refine the search.
+[TensorFlow](https://github.com/tensorflow/tensorflow) to find the DCNN parameters.
+Once the DCNN parameters are found, they can be exported to a file and the tsumego
+solver can use [keras.js](https://github.com/transcranial/keras-js)
+to evaluate the board and refine the search. The DCNN can be trained on
+[AWS](https://aws.amazon.com/tensorflow).
 
-For now the DCNN design is simple and mimics convnets for [recognizing letters](https://www.tensorflow.org/get_started/mnist/pros):
+For now the DCNN design is simple and mimics convnets for
+[recognizing letters](https://www.tensorflow.org/get_started/mnist/pros):
 
 1. Conv layer #1 with `[3, 3]` kernel to map a `[11, 11, 5]` feature tensor to a `[9, 9, 32]` one.
 2. Conv layer #2 with `[3, 3]` kernel to get a `[7, 7, 32]` tensor.

@@ -13,18 +13,18 @@
   "scripts": {
     "solve": "node solve node_modules/sgf-problems/gop/12354.sgf .bin/test/vars.sgf 20 7",
     "vplay": "node vplay .bin/test/vars.sgf .bin/test/subp",    
-    "feats": "node -e \"require('./feats).compute('.bin/subproblems/62612cd.sgf', '.bin/features')\"",
+    "feats": "node -e \"require('./feats).compute('.bin/problems/62612cd.sgf', '.bin/features')\"",
     "fview": "node fview .bin/features.json .bin/features.txt",
 
-    "solve-all": "node solve-all .bin/variations 20 7",
-    "vplay-all": "node vplay-all .bin/variations/*.sgf .bin/subproblems",
-    "check-all": "node check-all .bin/subproblems/*.sgf 0.001",
-    "feats-all": "node feats-all .bin/subproblems/*.sgf .bin/features",
+    "solve-all": "node solve-all .bin/solutions 20 7",
+    "vplay-all": "node vplay-all .bin/solutions/*.sgf .bin/problems",
+    "check-all": "node check-all .bin/problems/*.sgf 0.001",
+    "feats-all": "node feats-all .bin/problems/*.sgf .bin/features",
 
-    "pack-problems": "node pack .bin/subproblems/*.sgf .bin/subproblems.log",
+    "pack-problems": "node pack .bin/problems/*.sgf .bin/problems.log",
     "pack-features": "node pack .bin/features/*.json .bin/features.log",
 
-    "stats": "node stats .bin/subproblems/*.sgf",
+    "stats": "node stats .bin/problems/*.sgf",
 
     "dcnn": "py dcnn.py"
   }

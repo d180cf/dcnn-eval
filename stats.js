@@ -24,6 +24,9 @@ const pattern = '{0:>4} {1:>6} {2:>6}';
 console.log(format(pattern, 'size', 'safe', 'unsafe'));
 
 for (let n = 0; n < stats.length; n++) {
+    if (!stats[n])
+        continue;
+
     const [safe, unsafe] = stats[n];
     console.log(format(pattern, n, safe, unsafe));
 }

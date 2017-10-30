@@ -33,13 +33,19 @@ def get_configs():
             'features': np.array(data["features"]),
             'target': np.array(data["target"]),
             'label': np.array([1, 0] if data['safe'] == 0 else [0, 1]),
+            'name': name
         }
 
 print("Parsing JSON files...")
-configs = list(get_configs()) # preload all the relevant JSON files
-print("Inputs: %dK" % (len(configs)//1000))
+all_configs = list(get_configs()) # preload all the relevant JSON files
+train_configs = [x for x in all_configs if x['name'][0] != '0']
+check_configs = [x for x in all_configs if x['name'][0] == '0'] # 1/16 of all inputs
+print("Inputs: %dK (check = %dK, train = %dK)" % (
+    len(all_configs)//1000,
+    len(check_configs)//1000,
+    len(train_configs)//1000))
 
-def inputs(prob):
+def inputs(prob, configs = train_configs):
     for config in configs:
         if random.random() > prob: # pick only 10% of the inputs
             continue
@@ -85,7 +91,7 @@ def error():
     sum_x2 = 0
     sum_y2 = 0
 
-    for (_label, _image) in inputs(0.05): # quickly estimate error on 5% of inputs
+    for (_label, _image) in inputs(0.05, check_configs): # quickly estimate error on 5% of inputs
         result = prediction.eval(feed_dict={
             keep_prob: 1.0,
             labels: [_label],

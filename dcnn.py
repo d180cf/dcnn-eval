@@ -78,7 +78,12 @@ def batches(size, prob):
 
 def error():
     wrong = 0
-    total = 0
+    n = 0
+    sum_x = 0
+    sum_y = 0
+    sum_xy = 0
+    sum_x2 = 0
+    sum_y2 = 0
 
     for (_label, _image) in inputs(0.05): # quickly estimate error on 5% of inputs
         result = prediction.eval(feed_dict={
@@ -87,15 +92,23 @@ def error():
             images: [_image] })
 
         # -1 = unsafe; +1 = safe
-        estimated = result[0][1] - result[0][0]
-        actual = _label[1] - _label[0]
+        x = result[0][1] - result[0][0]
+        y = _label[1] - _label[0]
 
-        if estimated * actual < 0:
+        sum_x += x
+        sum_y += y
+        sum_x2 += x*x
+        sum_y2 += y*y
+        sum_xy += x*y
+
+        if x * y < 0:
             wrong += 1
 
-        total += 1
+        n += 1
     
-    return wrong/total
+    correlation = (n*sum_xy - sum_x*sum_y) / ((n*sum_x2 - sum_x**2)*(n*sum_y2 - sum_y**2))**0.5
+
+    return (wrong/n, correlation)
 
 def weights(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
@@ -181,5 +194,6 @@ with tf.Session() as session:
             _train += time.time() - _ts
 
         _total = time.time() - _total
-        print("Accuracy: %.2f at iteration %d, %.2f spent on training, %.1fs total"
-            % (1 - error(), i + 1, _train/_total, _total))
+        (errr, corr) = error()
+        print("accuracy %.2f, correlation %.2f, iteration %d, spent on training %.2f, total %.1fs"
+            % (1 - errr, corr, i + 1, _train/_total, _total))

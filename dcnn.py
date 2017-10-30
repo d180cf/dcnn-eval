@@ -25,18 +25,12 @@ def submatrix(tensor, xmin, xmax, ymin, ymax):
     
     return result
 
-def get_configs(min_area_size):
+def get_configs():
     for name in os.listdir(".bin/features"):
-        config = json.load(open(".bin/features/" + name))
-        areasize = config["area"]
-
-        if areasize < min_area_size: # skip too easy problems
-            continue
-
-        yield config
+        yield json.load(open(".bin/features/" + name))
 
 print("Parsing JSON files...")
-configs = [x for x in get_configs(8)] # preload all the relevant JSON files
+configs = [x for x in get_configs()] # preload all the relevant JSON files
 print("configs: %d" % (len(configs)))
 
 def inputs(prob):

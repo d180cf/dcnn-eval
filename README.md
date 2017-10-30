@@ -65,6 +65,7 @@ Plays out all the moves in the tree and generates a separate SGF file for each n
 
 ```
 size   safe unsafe
+------------------
    0      0   3196
    1   1968  11768
    2   8569  24258

@@ -10,7 +10,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 N = 11 # board frame size
 F = int(sys.argv[1]) # features
-K = 3 # kernel
+MAS = 7 # min area size
 
 # returns tensor[xmin..xmax, ymin..ymax] with zero padding
 def submatrix(tensor, xmin, xmax, ymin, ymax):
@@ -26,9 +26,20 @@ def submatrix(tensor, xmin, xmax, ymin, ymax):
     
     return result
 
-def get_configs():
+def get_configs(count = 0):
+    index = 0
     for name in os.listdir(".bin/features"):
+        index += 1
+
+        if count and index > count:
+            break
+
         data = json.load(open(".bin/features/" + name))
+        size = data["area"]
+
+        if size < MAS:
+            continue
+
         yield {
             'features': np.array(data["features"]),
             'target': np.array(data["target"]),
@@ -94,7 +105,6 @@ def error():
 
     for (_label, _image) in inputs(1.0, check_configs):
         result = prediction.eval(feed_dict={
-            keep_prob: 1.0,
             labels: [_label],
             images: [_image] })
 
@@ -128,56 +138,48 @@ def bias(shape):
     initial = tf.constant(0.1, shape=shape)
     return tf.Variable(initial)
 
-# e.g. [?, 11, 11, 5] x [11, 11, 5, 32] -> [?, 9, 9, 32]
 def conv2d(x, W):
     return tf.nn.conv2d(x, W,
         strides=[1, 1, 1, 1],
         padding='VALID')
 
-
 images = tf.placeholder(tf.float32, shape=[None, N, N, F])
 labels = tf.placeholder(tf.float32, shape=[None, 2])
 
 def make_dcnn():
-    # [11, 11, F] x [3, 3, F, 32] -> [9, 9, 32]
-    kernel_1 = weights([K, K, F, 32])
-    bias_1 = bias([32])
-    output_1 = tf.nn.relu(conv2d(images, kernel_1) + bias_1)
+    def conv(n):
+        _krnl = weights([n, n, F, 1])
+        _bias = bias([1])
+        _conv = tf.nn.relu(conv2d(images, _krnl) + _bias)
+        return tf.reshape(_conv, [-1, (N - (n - 1))**2])
 
-    # [9, 9, 32] x [3, 3, 32, 32] -> [7, 7, 32]
-    kernel_2 = weights([K, K, 32, 32])
-    bias_2 = bias([32])
-    output_2 = tf.nn.relu(conv2d(output_1, kernel_2) + bias_2)
+    def conn(x, m, n):
+        _krnl = weights([m, n])
+        _bias = bias([n])
+        return tf.matmul(x, _krnl) + _bias
 
-    # [7, 7, 32] x [3, 3, 32, 32] -> [5, 5, 32]
-    kernel_3 = weights([K, K, 32, 32])
-    bias_3 = bias([32])
-    output_3 = tf.nn.relu(conv2d(output_2, kernel_3) + bias_3)
+    # shape = [(N - 0)**2 + (N - 1)**2 + (N - 2)**2 + ...]
+    layer_1 = tf.concat([
+        conv(1),
+        conv(2),
+        conv(3),
+        conv(4),
+        conv(5)], 1)
 
-    # [5, 5, 32] -> [1024]
-    kernel_4 = weights([5*5*32, 1024])
-    bias_4 = bias([1024])
-    output_4 = tf.matmul(tf.reshape(output_3, [-1, 5*5*32]), kernel_4) + bias_4
+    layer_2 = tf.nn.relu(conn(layer_1, 415, 50))
+    layer_3 = tf.nn.relu(conn(layer_2, 50, 30))
 
-    # dropout: [1024] -> [1024]
-    keep_prob = tf.placeholder(tf.float32)
-    output_5 = tf.nn.dropout(output_4, keep_prob)
-
-    # [1024] -> [2]
-    kernel_6 = weights([1024, 2])
-    bias_6 = bias([2])
-    output_6 = tf.matmul(output_5, kernel_6) + bias_6
+    output = conn(layer_3, 30, 2)
 
     return (
-        keep_prob,
-        tf.nn.softmax(output_6),
+        tf.nn.softmax(output),
         tf.train.AdamOptimizer(1e-4).minimize(
             tf.reduce_mean(
                 tf.nn.softmax_cross_entropy_with_logits(
                     labels=labels,
-                    logits=output_6))))
+                    logits=output))))
 
-(keep_prob, prediction, optimizer) = make_dcnn()
+(prediction, optimizer) = make_dcnn()
 
 with tf.Session() as session:
     session.run(tf.global_variables_initializer())
@@ -191,7 +193,6 @@ with tf.Session() as session:
             _ts = time.time()
 
             optimizer.run(feed_dict={
-                keep_prob: 0.5,
                 labels: _labels,
                 images: _images })
 

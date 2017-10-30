@@ -28,30 +28,37 @@ def submatrix(tensor, xmin, xmax, ymin, ymax):
 
 def get_configs():
     for name in os.listdir(".bin/features"):
-        yield json.load(open(".bin/features/" + name))
+        data = json.load(open(".bin/features/" + name))
+        yield {
+            'features': np.array(data["features"]),
+            'target': np.array(data["target"]),
+            'label': np.array([1, 0] if data['safe'] == 0 else [0, 1]),
+        }
 
 print("Parsing JSON files...")
-configs = [x for x in get_configs()] # preload all the relevant JSON files
-print("Inputs: %dK x 8 x T" % (len(configs)//1000))
+configs = list(get_configs()) # preload all the relevant JSON files
+print("Inputs: %dK" % (len(configs)//1000))
 
 def inputs(prob):
     for config in configs:
         if random.random() > prob: # pick only 10% of the inputs
             continue
 
-        target = np.array(config["target"]) # [M, 2] - a list of (x, y) coords
-        image = np.array(config["features"]) # [board.size + 2, board.size + 2, 5] - NHWC
-        label = config["safe"]        
+        target = config["target"] # [M, 2] - a list of (x, y) coords
+        image = config["features"] # [board.size + 2, board.size + 2, 5] - NHWC
+        label = config["label"]        
         [tx, ty] = random.choice(target)        
         frame = submatrix(image, tx - N//2, tx + N//2, ty - N//2, ty + N//2)
 
-        # the result is invariant wrt transposition and rotation
+        # the result is invariant wrt transposition
         if (random.randint(0, 1) == 1): 
             frame = frame.transpose((1, 0, 2))
+
+        # the result is invariant wrt rotation
         for i in range(random.randint(0, 3)):
             frame = np.rot90(frame)
         
-        yield ([1, 0] if label == 0 else [0, 1], frame)
+        yield (label, frame)
 
 def batches(size, prob):
     _labels = []

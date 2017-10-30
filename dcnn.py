@@ -65,6 +65,9 @@ def batches(size, prob):
             yield (np.array(_labels), np.array(_images))
             _labels = []
             _images = []
+    
+    if len(_labels) > 0:
+        yield (np.array(_labels), np.array(_images))
 
 def error():
     wrong = 0
@@ -144,13 +147,17 @@ with tf.Session() as session:
         _total = time.time()
         _train = 0
 
-        for (_labels, _images) in batches(50, 0.25):
+        # pick 10% of inputs and split them into 25-item batches
+        for (_labels, _images) in batches(25, 0.1):
             _ts = time.time()
+
             optimizer.run(feed_dict={
                 keep_prob: 0.5,
                 labels: _labels,
                 images: _images })
+
             _train += time.time() - _ts
 
         _total = time.time() - _total
-        print("Accuracy: %.2f at iteration %d, %.2f spent on training" % (1 - error(), i + 1, _train/_total))
+        print("Accuracy: %.2f at iteration %d, %.2f spent on training, %.1fs total"
+            % (1 - error(), i + 1, _train/_total, _total))

@@ -32,7 +32,7 @@ def get_configs():
 
 print("Parsing JSON files...")
 configs = [x for x in get_configs()] # preload all the relevant JSON files
-print("configs: %d" % (len(configs)))
+print("Inputs: %dK x 8 x T" % (len(configs)//1000))
 
 def inputs(prob):
     for config in configs:

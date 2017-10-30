@@ -3,6 +3,7 @@ const [, , input] = process.argv;
 const fs = require('fs');
 const fstext = require('./fstext');
 const glob = require('glob');
+const format = require('./format');
 
 const stats = [];
 
@@ -18,9 +19,11 @@ for (const path of glob.sync(input)) {
     total++;
 }
 
-console.log(`size safe unsafe`);
+const pattern = '{0:>4} {1:>6} {2:>6}';
+
+console.log(format(pattern, 'size', 'safe', 'unsafe'));
 
 for (let n = 0; n < stats.length; n++) {
     const [safe, unsafe] = stats[n];
-    console.log(`${n} ${safe} ${unsafe}`);
+    console.log(format(pattern, n, safe, unsafe));
 }

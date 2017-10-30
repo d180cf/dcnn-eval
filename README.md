@@ -82,7 +82,7 @@ size   safe unsafe
   13     39     22
 ```
 
-Boards with too few available moves can be ignored as it's easier to run the usual DFS than to run a DCNN. There are about 80K boards with 7+ available moves - a good enough training set.
+Boards with too few available moves can be ignored as it's easier to run the usual DFS will be faster on such boards. There are about 80K boards with 7+ available moves - a good enough training set.
 
 ```
 npm run check-all

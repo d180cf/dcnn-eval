@@ -8,7 +8,7 @@ import tensorflow as tf
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 N = 11 # board frame size
-F = 5 # features
+F = 6 # features
 K = 3 # kernel
 
 # returns tensor[xmin..xmax, ymin..ymax] with zero padding
@@ -104,7 +104,7 @@ def maxpool(x):
 images = tf.placeholder(tf.float32, shape=[None, N, N, F])
 labels = tf.placeholder(tf.float32, shape=[None, 2])
 
-# [11, 11, 5] x [3, 3, 5, 32] -> [9, 9, 32]
+# [11, 11, F] x [3, 3, F, 32] -> [9, 9, 32]
 kernel_1 = weights([K, K, F, 32])
 output_1 = maxpool(tf.nn.relu(conv2d(images, kernel_1) + bias([32])))
 
@@ -140,7 +140,7 @@ with tf.Session() as session:
     session.run(tf.global_variables_initializer())
 
     for i in range(1000):
-        print("Accuracy: %.2f (before iteration %d)" % (1 - error(), i + 1))
+        print("Accuracy: %.2f at iteration %d" % (1 - error(), i + 1))
         for (_labels, _images) in batches(50, 0.25):
             optimizer.run(feed_dict={
                 keep_prob: 0.5,

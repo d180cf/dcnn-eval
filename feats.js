@@ -10,12 +10,14 @@ const tsumego = require('tsumego.js');
 
 exports.compute = compute;
 
-const FI_N = 0; // neutral
-const FI_A = 1; // ally
-const FI_E = 2; // enemy
-const FI_1 = 3; // atari
-const FI_S = 4; // size > 1
-const _F_N = 5; // number of features
+const F_WALL = 0;
+const F_ALLY = 1;
+const F_ENEMY = 2;
+const F_ATARI = 3;
+const F_BIG = 4;
+const F_VACANT = 5;
+
+const F_COUNT = 6; // number of features
 
 function compute(input, output) {
     const sgf = fstext.read(input);
@@ -45,10 +47,10 @@ function compute(input, output) {
  * 
  * @param {tsumego.Board} board
  * @param {{x: number, y: number}} target
- * @returns {number[][][]} shape = [board.size + 2, board.size + 2, 5]
+ * @returns {number[][][]} shape = [board.size + 2, board.size + 2, F_COUNT]
  */
 function features(board, target) {
-    const result = tensor([board.size + 2, board.size + 2, _F_N]); // +2 to include the wall
+    const result = tensor([board.size + 2, board.size + 2, F_COUNT]); // +2 to include the wall
     const color = tsumego.sign(board.get(target.x, target.y));
 
     for (let x = -1; x < board.size + 1; x++) {
@@ -57,16 +59,17 @@ function features(board, target) {
             const i = y + 1;
 
             if (!board.inBounds(x, y)) {
-                result[i][j][FI_N] = 1;
+                result[i][j][F_WALL] = 1;
             } else {
                 const block = board.get(x, y);
                 const nlibs = tsumego.block.libs(block);
                 const nsize = tsumego.block.size(block);
 
-                result[i][j][FI_A] = block * color > 0 ? 1 : 0;
-                result[i][j][FI_E] = block * color < 0 ? 1 : 0;
-                result[i][j][FI_1] = nlibs == 1 ? 1 : 0;
-                result[i][j][FI_S] = nsize > 1 ? 1 : 0;
+                result[i][j][F_ALLY] = block * color > 0 ? 1 : 0;
+                result[i][j][F_ENEMY] = block * color < 0 ? 1 : 0;
+                result[i][j][F_ATARI] = nlibs == 1 ? 1 : 0;
+                result[i][j][F_BIG] = nsize > 1 ? 1 : 0;
+                result[i][j][F_VACANT] = block ? 0 : 1;
             }
         }
     }

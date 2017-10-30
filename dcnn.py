@@ -78,18 +78,24 @@ def batches(size, prob):
 
 def error():
     wrong = 0
-    count = 0
+    total = 0
 
     for (_label, _image) in inputs(0.05): # quickly estimate error on 5% of inputs
         result = prediction.eval(feed_dict={
             keep_prob: 1.0,
             labels: [_label],
             images: [_image] })
-        if (result[0][1] > result[0][0]) != (_label[1] > _label[0]):
+
+        # -1 = unsafe; +1 = safe
+        estimated = result[0][1] - result[0][0]
+        actual = _label[1] - _label[0]
+
+        if estimated * actual < 0:
             wrong += 1
-        count += 1
+
+        total += 1
     
-    return wrong/count
+    return wrong/total
 
 def weights(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
@@ -159,7 +165,7 @@ def make_dcnn():
 with tf.Session() as session:
     session.run(tf.global_variables_initializer())
 
-    for i in range(50):
+    for i in range(500):
         _total = time.time()
         _train = 0
 

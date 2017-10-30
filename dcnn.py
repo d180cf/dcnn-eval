@@ -83,8 +83,9 @@ def batches(size, prob):
         yield (np.array(_labels), np.array(_images))
 
 def error():
-    wrong = 0
     n = 0
+    err_0 = 0
+    err_1 = 0
     sum_x = 0
     sum_y = 0
     sum_xy = 0
@@ -97,9 +98,9 @@ def error():
             labels: [_label],
             images: [_image] })
 
-        # -1 = unsafe; +1 = safe
-        x = result[0][1] - result[0][0]
-        y = _label[1] - _label[0]
+        # 1 = safe; 0 = unsafe
+        x = result[0][1]
+        y = _label[1]
 
         sum_x += x
         sum_y += y
@@ -107,14 +108,17 @@ def error():
         sum_y2 += y*y
         sum_xy += x*y
 
-        if x * y < 0:
-            wrong += 1
+        if y == 0 and x > 0.5:
+            err_0 += 1
+
+        if y == 1 and x < 0.5:
+            err_1 += 1
 
         n += 1
     
     correlation = (n*sum_xy - sum_x*sum_y) / ((n*sum_x2 - sum_x**2)*(n*sum_y2 - sum_y**2))**0.5
 
-    return (wrong/n, correlation)
+    return (err_0/n, err_1/n, correlation)
 
 def weights(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
@@ -167,7 +171,7 @@ def make_dcnn():
     return (
         keep_prob,
         tf.nn.softmax(output_6),
-        tf.train.AdamOptimizer(5e-5).minimize(
+        tf.train.AdamOptimizer(1e-4).minimize(
             tf.reduce_mean(
                 tf.nn.softmax_cross_entropy_with_logits(
                     labels=labels,
@@ -194,6 +198,6 @@ with tf.Session() as session:
             _train += time.time() - _ts
 
         _total = time.time() - _total
-        (errr, corr) = error()
-        print("accuracy %.2f, correlation %.2f, iteration %d, spent on training %.2f, total %.1fs"
-            % (1 - errr, corr, i + 1, _train/_total, _total))
+        (err_0, err_1, corr) = error()
+        print("error %.2f = %.2f + %.2f, correlation %.2f, iteration %d, spent on training %.2f, total %.1fs"
+            % (err_0 + err_1, err_0, err_1, corr, i + 1, _train/_total, _total))

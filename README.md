@@ -45,7 +45,7 @@ For now the DCNN design is simple and mimics convnets for [recognizing letters](
 
 The error rate of this DCNN is 20% (the error rate of a random number generator is 50% since there are only two outputs).
 
-There is also a [paper](http://www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf) describing a DCNN that has accuracy rate 97% in evaluating tsumego status.
+There is also a [paper](http://www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf) describing a DCNN that has accuracy rate 94.8% in evaluating tsumego status.
 
 # How inputs to DCNN are generated
 

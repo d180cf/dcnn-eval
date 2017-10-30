@@ -91,7 +91,7 @@ def error():
     sum_x2 = 0
     sum_y2 = 0
 
-    for (_label, _image) in inputs(0.05, check_configs): # quickly estimate error on 5% of inputs
+    for (_label, _image) in inputs(1.0, check_configs):
         result = prediction.eval(feed_dict={
             keep_prob: 1.0,
             labels: [_label],

@@ -114,41 +114,47 @@ def maxpool(x):
 
 images = tf.placeholder(tf.float32, shape=[None, N, N, F])
 labels = tf.placeholder(tf.float32, shape=[None, 2])
-keep_prob = tf.placeholder(tf.float32)
 
 def make_dcnn():
     # [11, 11, F] x [3, 3, F, 32] -> [9, 9, 32]
     kernel_1 = weights([K, K, F, 32])
-    output_1 = maxpool(tf.nn.relu(conv2d(images, kernel_1) + bias([32])))
+    bias_1 = bias([32])
+    output_1 = maxpool(tf.nn.relu(conv2d(images, kernel_1) + bias_1))
 
     # [9, 9, 32] x [3, 3, 32, 32] -> [7, 7, 32]
     kernel_2 = weights([K, K, 32, 32])
-    output_2 = maxpool(tf.nn.relu(conv2d(output_1, kernel_2) + bias([32])))
+    bias_2 = bias([32])
+    output_2 = maxpool(tf.nn.relu(conv2d(output_1, kernel_2) + bias_2))
 
     # [7, 7, 32] x [3, 3, 32, 32] -> [5, 5, 32]
     kernel_3 = weights([K, K, 32, 32])
-    output_3 = maxpool(tf.nn.relu(conv2d(output_2, kernel_3) + bias([32])))
+    bias_3 = bias([32])
+    output_3 = maxpool(tf.nn.relu(conv2d(output_2, kernel_3) + bias_3))
 
     # [5, 5, 32] -> [1024]
     kernel_4 = weights([5*5*32, 1024])
-    output_4 = tf.matmul(tf.reshape(output_3, [-1, 5*5*32]), kernel_4) + bias([1024])
+    bias_4 = bias([1024])
+    output_4 = tf.matmul(tf.reshape(output_3, [-1, 5*5*32]), kernel_4) + bias_4
 
-    # dropout: [1024] -> [1024]    
-    output_d = tf.nn.dropout(output_4, keep_prob)
+    # dropout: [1024] -> [1024]
+    keep_prob = tf.placeholder(tf.float32)
+    output_5 = tf.nn.dropout(output_4, keep_prob)
 
     # [1024] -> [2]
-    kernel_5 = weights([1024, 2])
-    output_5 = tf.matmul(output_d, kernel_5) + bias([2])
+    kernel_6 = weights([1024, 2])
+    bias_6 = bias([2])
+    output_6 = tf.matmul(output_5, kernel_6) + bias_6
 
     return (
-        tf.nn.softmax(output_5),
+        keep_prob,
+        tf.nn.softmax(output_6),
         tf.train.AdamOptimizer(1e-4).minimize(
             tf.reduce_mean(
                 tf.nn.softmax_cross_entropy_with_logits(
                     labels=labels,
-                    logits=output_5))))
+                    logits=output_6))))
 
-(prediction, optimizer) = make_dcnn()
+(keep_prob, prediction, optimizer) = make_dcnn()
 
 with tf.Session() as session:
     session.run(tf.global_variables_initializer())

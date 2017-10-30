@@ -11,12 +11,12 @@
     "@types/node": "8.0.46"
   },
   "scripts": {
-    "solve": "node solve node_modules/sgf-problems/gop/12354.sgf .bin/test/vars.sgf 50 0",
+    "solve": "node solve node_modules/sgf-problems/gop/12354.sgf .bin/test/vars.sgf 20 7",
     "vplay": "node vplay .bin/test/vars.sgf .bin/test/subp",    
     "feats": "node -e \"require('./feats).compute('.bin/subproblems/62612cd.sgf', '.bin/features')\"",
     "fview": "node fview .bin/features.json .bin/features.txt",
 
-    "solve-all": "node solve-all .bin/variations 50 0",
+    "solve-all": "node solve-all .bin/variations 20 7",
     "vplay-all": "node vplay-all .bin/variations/*.sgf .bin/subproblems",
     "check-all": "node check-all .bin/subproblems/*.sgf 0.001",
     "feats-all": "node feats-all .bin/subproblems/*.sgf .bin/features",

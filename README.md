@@ -55,13 +55,33 @@ There is a set of 100 or so handmade (well, mostly taken from goproblems.com) ts
 npm run solve-all
 ```
 
-Solves each tsumego and outputs a tree of subproblems. When generating the tree the script picks moves that change the safety status of the target group. Every node (not just leafs) in this tree is a subproblem. This step takes a while, but its output is compact, so results can be saved as a npm package.
+Solves each tsumego and outputs a tree of subproblems. When generating the tree the script picks moves that change the safety status of the target group. Every node (not just leafs) in this tree is a subproblem. This step takes a while, but its output is compact.
 
 ```
 npm run vplay-all
 ```
 
-Plays out all the moves in the tree and generates a separate SGF file for each node. Each subproblem is labeled with `TS[1]` if the target group is safe. This step doesn't take long, but the output is huge: about 500K SGF files. The number will be smaller if boards with less than 7 or so available moves are ignored.
+Plays out all the moves in the tree and generates a separate SGF file for each node. Each subproblem is labeled with `TS[1]` if the target group is safe. Also, `npm run stats` prints how many boards have safe or unsafe target per board size:
+
+```
+size   safe unsafe
+   0      0   3196
+   1   1968  11768
+   2   8569  24258
+   3  23069  36662
+   4  44738  44791
+   5  41719  44377
+   6  43741  31277
+   7  21476  22465
+   8  15373   8902
+   9   4532   5070
+  10   2307    981
+  11    518    517
+  12    114     47
+  13     39     22
+```
+
+Boards with too few available moves can be ignored as it's easier to run the usual DFS than to run a DCNN. There are about 80K boards with 7+ available moves - a good enough training set.
 
 ```
 npm run check-all

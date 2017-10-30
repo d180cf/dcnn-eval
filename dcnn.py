@@ -130,12 +130,6 @@ def conv2d(x, W):
         strides=[1, 1, 1, 1],
         padding='VALID')
 
-# keeps size of the input
-def maxpool(x):
-    return tf.nn.max_pool(x,
-        ksize=[1, 2, 2, 1],
-        strides=[1, 1, 1, 1],
-        padding='SAME')
 
 images = tf.placeholder(tf.float32, shape=[None, N, N, F])
 labels = tf.placeholder(tf.float32, shape=[None, 2])
@@ -144,17 +138,17 @@ def make_dcnn():
     # [11, 11, F] x [3, 3, F, 32] -> [9, 9, 32]
     kernel_1 = weights([K, K, F, 32])
     bias_1 = bias([32])
-    output_1 = maxpool(tf.nn.relu(conv2d(images, kernel_1) + bias_1))
+    output_1 = tf.nn.relu(conv2d(images, kernel_1) + bias_1)
 
     # [9, 9, 32] x [3, 3, 32, 32] -> [7, 7, 32]
     kernel_2 = weights([K, K, 32, 32])
     bias_2 = bias([32])
-    output_2 = maxpool(tf.nn.relu(conv2d(output_1, kernel_2) + bias_2))
+    output_2 = tf.nn.relu(conv2d(output_1, kernel_2) + bias_2)
 
     # [7, 7, 32] x [3, 3, 32, 32] -> [5, 5, 32]
     kernel_3 = weights([K, K, 32, 32])
     bias_3 = bias([32])
-    output_3 = maxpool(tf.nn.relu(conv2d(output_2, kernel_3) + bias_3))
+    output_3 = tf.nn.relu(conv2d(output_2, kernel_3) + bias_3)
 
     # [5, 5, 32] -> [1024]
     kernel_4 = weights([5*5*32, 1024])
@@ -173,7 +167,7 @@ def make_dcnn():
     return (
         keep_prob,
         tf.nn.softmax(output_6),
-        tf.train.AdamOptimizer(1e-4).minimize(
+        tf.train.AdamOptimizer(5e-5).minimize(
             tf.reduce_mean(
                 tf.nn.softmax_cross_entropy_with_logits(
                     labels=labels,

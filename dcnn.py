@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import time
 import numpy as np
 import random
 import tensorflow as tf
@@ -139,10 +140,17 @@ optimizer = tf.train.AdamOptimizer(1e-4).minimize(
 with tf.Session() as session:
     session.run(tf.global_variables_initializer())
 
-    for i in range(1000):
-        print("Accuracy: %.2f at iteration %d" % (1 - error(), i + 1))
+    for i in range(50):
+        _total = time.time()
+        _train = 0
+
         for (_labels, _images) in batches(50, 0.25):
+            _ts = time.time()
             optimizer.run(feed_dict={
                 keep_prob: 0.5,
                 labels: _labels,
                 images: _images })
+            _train += time.time() - _ts
+
+        _total = time.time() - _total
+        print("Accuracy: %.2f at iteration %d, %.2f spent on training" % (1 - error(), i + 1, _train/_total))

@@ -139,13 +139,10 @@ optimizer = tf.train.AdamOptimizer(1e-4).minimize(
 with tf.Session() as session:
     session.run(tf.global_variables_initializer())
 
-    print("Error: %.2f" % (error()))
-
     for i in range(1000):
+        print("Accuracy: %.2f (before iteration %d)" % (1 - error(), i + 1))
         for (_labels, _images) in batches(50, 0.25):
             optimizer.run(feed_dict={
                 keep_prob: 0.5,
                 labels: _labels,
                 images: _images })
-
-        print("Error: %.2f epoch %d" % (error(), i + 1))

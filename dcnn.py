@@ -150,7 +150,7 @@ def make_dcnn():
     def conv(n):
         _krnl = weights([n, n, F, 1])
         _bias = bias([1])
-        _conv = tf.nn.relu(conv2d(images, _krnl) + _bias)
+        _conv = tf.nn.elu(conv2d(images, _krnl) + _bias)
         return tf.reshape(_conv, [-1, (N - (n - 1))**2])
 
     def conn(x, m, n):
@@ -166,10 +166,11 @@ def make_dcnn():
         conv(4),
         conv(5)], 1)
 
-    layer_2 = tf.nn.relu(conn(layer_1, 415, 50))
-    layer_3 = tf.nn.relu(conn(layer_2, 50, 30))
+    layer_2 = tf.nn.elu(conn(layer_1, 415, 150))
+    layer_3 = tf.nn.elu(conn(layer_2, 150, 80))
+    layer_4 = tf.nn.elu(conn(layer_3, 80, 20))
 
-    output = conn(layer_3, 30, 2)
+    output = conn(layer_4, 20, 2)
 
     return (
         tf.nn.softmax(output),
@@ -184,12 +185,11 @@ def make_dcnn():
 with tf.Session() as session:
     session.run(tf.global_variables_initializer())
 
-    for i in range(500):
+    for i in range(1000):
         _total = time.time()
         _train = 0
 
-        # pick 10% of inputs and split them into 25-item batches
-        for (_labels, _images) in batches(25, 0.1):
+        for (_labels, _images) in batches(25, 0.5):
             _ts = time.time()
 
             optimizer.run(feed_dict={

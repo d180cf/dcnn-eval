@@ -45,17 +45,13 @@ solver can use [keras.js](https://github.com/transcranial/keras-js)
 to evaluate the board and refine the search. The DCNN can be quickly trained on
 [AWS](https://aws.amazon.com/tensorflow).
 
-For now the DCNN design is simple and mimics convnets for
-[recognizing letters](https://www.tensorflow.org/get_started/mnist/pros):
+There is a [paper](http://www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf)
+that describes a `8x8->140->50->30->2` DCNN with accuracy 95%. This idea is implemented here:
 
-1. Conv layer #1 with `[3, 3]` kernel to map a `[11, 11, 5]` feature tensor to a `[9, 9, 32]` one.
-2. Conv layer #2 with `[3, 3]` kernel to get a `[7, 7, 32]` tensor.
-3. Conv layer #3 with `[3, 3]` kernel to get a `[5, 5, 32]` tensor.
-4. A densely-connected layer to get a `[1024]` vector.
-5. Dropout to reduce overfitting.
-6. Readout to get a `[2]` vector: the prediction whether the target is safe.
+1. `[11, 11, F]` input is convolved with a `[K, K, 1]` kernels for `K=1..5`
+1. The 5 outputs are merged into a `[415]` vector and with fully connected layers is mapped into `[150]`, `[80]`, `[20]` and `[2]` vectors.
 
-There is also a [paper](http://www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf) describing a DCNN that has accuracy rate 94.8% in evaluating tsumego status.
+Its accuracy on tsumegos with size 7+ appears to be 80%.
 
 # How inputs to DCNN are generated
 

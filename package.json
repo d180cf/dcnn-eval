@@ -26,6 +26,9 @@
 
     "stats": "node stats .bin/problems/*.sgf",
 
+    "make-tfrs": "python make-tfrs.py .bin/features .bin/main.tfrecords .bin/test.tfrecords 0.1 7",
+    "test-tfrs": "python test-tfrs.py .bin/test.tfrecords 10",
+
     "dcnn": "py dcnn.py 5"
   }
 }

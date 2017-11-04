@@ -30,6 +30,6 @@
     "test-tfrs": "python test-tfrs.py .bin/test.tfrecords 10",
     "read-tfrs": "python read-tfrs.py .bin/test.tfrecords 9",
 
-    "dcnn": "py dcnn.py 5"
+    "dcnn": "py dcnn.py .bin/main.tfrecords .bin/test.tfrecords 11 5"
   }
 }

@@ -8,92 +8,73 @@ import tensorflow as tf
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-N = 11 # board frame size
-F = int(sys.argv[1]) # features
-MAS = 7 # min area size
+ds_main = sys.argv[1] # .tfrecords file with the main dataset
+ds_test = sys.argv[2] # .tfrecords file with the test dataset
+N = int(sys.argv[3]) # board frame size, e.g. 11 x 11
+F = int(sys.argv[4]) # the number of features features, e.g. 5
 
-# returns tensor[xmin..xmax, ymin..ymax] with zero padding
-def submatrix(tensor, xmin, xmax, ymin, ymax):
-    (width, height, depth) = tensor.shape
-    result = np.zeros((xmax - xmin + 1, ymax - ymin + 1, depth))
+def parse(example):
+    features = tf.parse_single_example(example, {
+        "size": tf.FixedLenFeature((), tf.int64),
+        "label": tf.FixedLenFeature((2), tf.int64),
+        "shape": tf.FixedLenFeature((3), tf.int64),
+        "planes": tf.VarLenFeature(tf.int64),
+        "target": tf.VarLenFeature(tf.int64) })
 
-    x1 = max(xmin, 0)
-    x2 = min(xmax, width - 1)
-    y1 = max(ymin, 0)
-    y2 = min(ymax, height - 1)
+    size = features["size"] # area size
+    label = features["label"] # [0, 1] or [1, 0]
+    shape = features["shape"] # [N + 2, N + 2, F] where F is the number of features and N is the size of the board
+    planes = features["planes"] # the features tensor with the shape above
+    target = features["target"] # list of [target.x, target.y] pointers
 
-    result[x1 - xmin : x2 - xmin + 1, y1 - ymin : y2 - ymin + 1] = tensor[x1 : x2 + 1, y1 : y2 + 1]
+    shape = tf.cast(shape, tf.int32) # otherwise TF crashes with weird CPU/GPU related error
+
+    planes = tf.sparse_tensor_to_dense(planes) # when TF was writing the file, it apparently compressed it
+    planes = tf.reshape(planes, shape)
+
+    target = tf.sparse_tensor_to_dense(target)
+    target = tf.reshape(target, [-1, 2])
+
+    count = tf.shape(target)[0]
+    index = tf.random_uniform([1], 0, count, tf.int32)[0]
+
+    t = target[index]
+
+    tx = t[0]
+    ty = t[1]
+
+    # `image` = 11 x 11 slice around [tx, ty] from `planes`, padded with 0s
+    image = tf.pad(planes, [[N//2, N//2], [N//2, N//2], [0, 0]])
+    image = image[tx : tx + N, ty : ty + N, :]
     
-    return result
+    # tranpose randomly
+    transpose = tf.random_uniform([1], 0, 2, tf.int32)[0]
+    image = tf.cond(
+        transpose > 0,
+        lambda: tf.transpose(image, [1, 0, 2]),
+        lambda: image)
 
-def get_configs(count = 0):
-    index = 0
-    for name in os.listdir(".bin/features"):
-        index += 1
+    # rotate up to 3 times
+    rotate = tf.random_uniform([1], 0, 4, tf.int32)[0]
+    image = tf.image.rot90(image, rotate)
 
-        if count and index > count:
-            break
+    return (label, image)
 
-        data = json.load(open(".bin/features/" + name))
-        size = data["area"]
+def make_dataset(filepath):
+    dataset = tf.contrib.data.TFRecordDataset(filepath)
+    dataset = dataset.map(parse)
+    dataset = dataset.shuffle(1024)
+    dataset = dataset.repeat()
+    dataset = dataset.batch(32)
+    return dataset
 
-        if size < MAS:
-            continue
+print('Initializing the main dataset...')    
+dataset_main = make_dataset(ds_main)
 
-        yield {
-            'features': np.array(data["features"]),
-            'target': np.array(data["target"]),
-            'label': np.array([1, 0] if data['safe'] == 0 else [0, 1]),
-            'name': name
-        }
+print('Initializing the test dataset...')    
+dataset_test = make_dataset(ds_test)
 
-print("Parsing JSON files...")
-all_configs = list(get_configs()) # preload all the relevant JSON files
-train_configs = [x for x in all_configs if x['name'][0] != '0']
-check_configs = [x for x in all_configs if x['name'][0] == '0'] # 1/16 of all inputs
-print("Inputs: %dK (check = %dK, train = %dK)" % (
-    len(all_configs)//1000,
-    len(check_configs)//1000,
-    len(train_configs)//1000))
-
-def inputs(prob, configs = train_configs):
-    for config in configs:
-        if random.random() > prob: # pick only 10% of the inputs
-            continue
-
-        target = config["target"] # [M, 2] - a list of (x, y) coords
-        image = config["features"] # [board.size + 2, board.size + 2, 5] - NHWC
-        label = config["label"]        
-        [tx, ty] = random.choice(target)        
-        frame = submatrix(image, tx - N//2, tx + N//2, ty - N//2, ty + N//2)
-
-        # the result is invariant wrt transposition
-        if (random.randint(0, 1) == 1): 
-            frame = frame.transpose((1, 0, 2))
-
-        # the result is invariant wrt rotation
-        for i in range(random.randint(0, 3)):
-            frame = np.rot90(frame)
-        
-        yield (label, frame)
-
-def batches(size, prob):
-    _labels = []
-    _images = []
-
-    for (label, image) in inputs(prob):
-        _labels.append(label)
-        _images.append(image)
-
-        if (len(_labels) == size):
-            yield (np.array(_labels), np.array(_images))
-            _labels = []
-            _images = []
-    
-    if len(_labels) > 0:
-        yield (np.array(_labels), np.array(_images))
-
-def error():
+def error(count, next_batch):
     n = 0
     err_0 = 0
     err_1 = 0
@@ -103,28 +84,38 @@ def error():
     sum_x2 = 0
     sum_y2 = 0
 
-    for (_label, _image) in inputs(1.0, check_configs):
-        result = prediction.eval(feed_dict={
-            labels: [_label],
-            images: [_image] })
+    for _ in range(count):
+        (_labels, _images) = next_batch()
 
-        # 1 = safe; 0 = unsafe
-        x = result[0][1]
-        y = _label[1]
+        results = prediction.eval(feed_dict={
+            labels: _labels,
+            images: _images })
 
-        sum_x += x
-        sum_y += y
-        sum_x2 += x*x
-        sum_y2 += y*y
-        sum_xy += x*y
+        assert _labels.shape[0] == _images.shape[0]
+        assert _labels.shape[0] == results.shape[0]
 
-        if y == 0 and x > 0.5:
-            err_0 += 1
+        for i in range(results.shape[0]):
+            _label = _labels[i]
+            _image = _images[i]
+            result = results[i]
 
-        if y == 1 and x < 0.5:
-            err_1 += 1
+            # 1 = safe; 0 = unsafe
+            x = result[1]
+            y = _label[1]
 
-        n += 1
+            sum_x += x
+            sum_y += y
+            sum_x2 += x*x
+            sum_y2 += y*y
+            sum_xy += x*y
+
+            if y == 0 and x > 0.5:
+                err_0 += 1
+
+            if y == 1 and x < 0.5:
+                err_1 += 1
+
+            n += 1
     
     correlation = (n*sum_xy - sum_x*sum_y) / ((n*sum_x2 - sum_x**2)*(n*sum_y2 - sum_y**2))**0.5
 
@@ -183,22 +174,29 @@ def make_dcnn():
 (prediction, optimizer) = make_dcnn()
 
 with tf.Session() as session:
+    iterator_main = dataset_main.make_initializable_iterator()
+    next_batch_main = iterator_main.get_next()    
+    session.run(iterator_main.initializer)
+
+    iterator_test = dataset_test.make_initializable_iterator()
+    next_batch_test = iterator_test.get_next()    
+    session.run(iterator_test.initializer)    
+
+    print('Initializing global variables...')
     session.run(tf.global_variables_initializer())
 
-    for i in range(1000):
-        _total = time.time()
-        _train = 0
+    try:
+        for i in range(1000):
+            # estimate the error on the test dataset
+            (err_0, err_1, corr) = error(50, lambda: session.run(next_batch_test))
+            print("error %.2f = %.2f + %.2f, correlation %.2f, iteration %d"
+                % (err_0 + err_1, err_0, err_1, corr, i))
 
-        for (_labels, _images) in batches(25, 0.5):
-            _ts = time.time()
-
-            optimizer.run(feed_dict={
-                labels: _labels,
-                images: _images })
-
-            _train += time.time() - _ts
-
-        _total = time.time() - _total
-        (err_0, err_1, corr) = error()
-        print("error %.2f = %.2f + %.2f, correlation %.2f, iteration %d, spent on training %.2f, total %.1fs"
-            % (err_0 + err_1, err_0, err_1, corr, i + 1, _train/_total, _total))
+            # adjust the DCNN weights on the main dataset
+            for _ in range(1000):
+                (_labels, _images) = session.run(next_batch_main)
+                optimizer.run(feed_dict={
+                    labels: _labels,
+                    images: _images })
+    except KeyboardInterrupt:
+        sys.exit()

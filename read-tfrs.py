@@ -21,15 +21,15 @@ def parse(example):
         "planes": tf.VarLenFeature(tf.int64),
         "target": tf.VarLenFeature(tf.int64) })
 
-    size = features["size"]
-    label = features["label"]
-    shape = features["shape"]
-    planes = features["planes"]
-    target = features["target"]
+    size = features["size"] # size of the board, can be anything
+    label = features["label"] # [0, 1] or [1, 0]
+    shape = features["shape"] # [size + 2, size + 2, F] where F is the number of features
+    planes = features["planes"] # the features tensor with the shape above
+    target = features["target"] # list of [target.x, target.y] pointers
 
-    shape = tf.cast(shape, tf.int32)
+    shape = tf.cast(shape, tf.int32) # otherwise TF crashes with weird CPU/GPU related error
 
-    planes = tf.sparse_tensor_to_dense(planes)
+    planes = tf.sparse_tensor_to_dense(planes) # when TF was writing the file, it apparently compressed it
     planes = tf.reshape(planes, shape)
 
     target = tf.sparse_tensor_to_dense(target)
@@ -38,8 +38,10 @@ def parse(example):
     count = tf.shape(target)[0]
     index = tf.random_uniform([1], 0, count, tf.int32)[0]
 
-    tx = target[index][0]
-    ty = target[index][1]
+    t = target[index]
+    
+    tx = t[0]
+    ty = t[1]
 
     # `image` = 11 x 11 slice around [tx, ty] from `planes`, padded with 0s
     image = tf.pad(planes, [[5, 5], [5, 5], [0, 0]])

@@ -28,6 +28,7 @@
 
     "make-tfrs": "python make-tfrs.py .bin/features .bin/main.tfrecords .bin/test.tfrecords 0.1 7",
     "test-tfrs": "python test-tfrs.py .bin/test.tfrecords 10",
+    "read-tfrs": "python read-tfrs.py .bin/test.tfrecords 9",
 
     "dcnn": "py dcnn.py 5"
   }

@@ -69,7 +69,7 @@ def parse(example):
     rotate = tf.random_uniform([1], 0, 4, tf.int32)[0]
     image = tf.image.rot90(image, rotate)
 
-    return (label, image)
+    return (label[1], image)
 
 def make_dataset(filepath):
     dataset = tf.data.TFRecordDataset(filepath)
@@ -104,7 +104,7 @@ def error(count, next_batch):
             images: _images })
 
         assert _labels.shape[0] == _images.shape[0]
-        assert _labels.shape[0] == results.shape[0]
+        assert _labels.shape == results.shape
 
         for i in range(results.shape[0]):
             _label = _labels[i]
@@ -112,8 +112,8 @@ def error(count, next_batch):
             result = results[i]
 
             # 1 = safe; 0 = unsafe
-            x = result[1]
-            y = _label[1]
+            x = result
+            y = _label
 
             sum_x += x
             sum_y += y
@@ -147,7 +147,7 @@ def conv2d(x, W):
         padding='VALID')
 
 images = tf.placeholder(tf.float32, shape=[None, N, N, F])
-labels = tf.placeholder(tf.float32, shape=[None, 2])
+labels = tf.placeholder(tf.float32, shape=[None])
 
 # perhaps the simplest NN possible: a weighthed sum of all features;
 # highest observed accuracy: 0.61
@@ -156,9 +156,9 @@ def make_dcnn_0():
     b = bias([1])
     w = weights([N*N*F, 1])
     y = tf.sigmoid(tf.matmul(x, w) + b)
-    e = tf.reduce_mean(tf.square(y - labels[:, 1:2]), 1)
-    return (tf.concat([1 - y, y], 1),
-        tf.train.GradientDescentOptimizer(0.5).minimize(e))
+    y = tf.reshape(y, [-1])
+    e = tf.square(y - labels)
+    return (y, tf.train.GradientDescentOptimizer(0.5).minimize(e))
 
 # www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf
 # highest observed accuracy: 0.82
@@ -182,17 +182,12 @@ def make_dcnn_1():
     for n in [50, 30]:
         hlayer = tf.nn.relu(conn(hlayer, n))
 
-    output = conn(hlayer, 2)
+    output = tf.sigmoid(conn(hlayer, 1))
+    output = tf.reshape(output, [-1])
+    avg_error = tf.square(output - labels)
+    return (output, tf.train.AdamOptimizer(1e-4).minimize(avg_error))
 
-    return (
-        tf.nn.softmax(output),
-        tf.train.AdamOptimizer(1e-4).minimize(
-            tf.reduce_mean(
-                tf.nn.softmax_cross_entropy_with_logits(
-                    labels=labels,
-                    logits=output))))
-
-(prediction, optimizer) = make_dcnn_0()
+(prediction, optimizer) = make_dcnn_1()
 
 with tf.Session() as session:
     iterator_main = dataset_main.make_initializable_iterator()

@@ -150,7 +150,7 @@ def make_dcnn_1():
     def conv(n):
         _krnl = weights([n, n, F, 1])
         _bias = bias([1])
-        _conv = tf.nn.elu(conv2d(images, _krnl) + _bias)
+        _conv = tf.nn.relu(conv2d(images, _krnl) + _bias)
         return tf.reshape(_conv, [-1, (N - n + 1)**2])
 
     def conn(x, n):
@@ -162,8 +162,8 @@ def make_dcnn_1():
     # shape = [(N - 0)**2 + (N - 1)**2 + (N - 2)**2 + ...]
     layer_0 = tf.concat([conv(n + 1) for n in range(N)], 1)
 
-    layer_1 = tf.nn.elu(conn(layer_0, 50))
-    layer_2 = tf.nn.elu(conn(layer_1, 30))
+    layer_1 = tf.nn.relu(conn(layer_0, 50))
+    layer_2 = tf.nn.relu(conn(layer_1, 30))
 
     output = conn(layer_2, 2)
 

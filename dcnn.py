@@ -15,6 +15,9 @@ ds_test = sys.argv[2] # .tfrecords file with the test dataset
 N = int(sys.argv[3]) # board frame size, e.g. 11 x 11
 F = int(sys.argv[4]) # the number of features features, e.g. 5
 
+print('Target frame: %dx%d' % (N, N))
+print('Features: %d' % (F))
+
 T = time.time()
 print('T = ' + datetime.datetime.now().isoformat())
 
@@ -91,6 +94,7 @@ def error(count, next_batch):
     sum_xy = 0
     sum_x2 = 0
     sum_y2 = 0
+    t = time.time()
 
     for _ in range(count):
         (_labels, _images) = next_batch()
@@ -127,7 +131,7 @@ def error(count, next_batch):
     
     correlation = (n*sum_xy - sum_x*sum_y) / ((n*sum_x2 - sum_x**2)*(n*sum_y2 - sum_y**2))**0.5
 
-    return (1.0*err_0/n, 1.0*err_1/n, correlation)
+    return (1.0*err_0/n, 1.0*err_1/n, correlation, time.time() - t)
 
 def weights(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
@@ -160,12 +164,13 @@ def make_dcnn_1():
         return tf.matmul(x, _krnl) + _bias
 
     # shape = [(N - 0)**2 + (N - 1)**2 + (N - 2)**2 + ...]
-    layer_0 = tf.concat([conv(n + 1) for n in range(N)], 1)
+    hlayer = tf.concat([conv(n + 1) for n in range(N)], 1)
 
-    layer_1 = tf.nn.relu(conn(layer_0, 50))
-    layer_2 = tf.nn.relu(conn(layer_1, 30))
+    # a few fully connected layers
+    for n in [50, 30]:
+        hlayer = tf.nn.relu(conn(hlayer, n))
 
-    output = conn(layer_2, 2)
+    output = conn(hlayer, 2)
 
     return (
         tf.nn.softmax(output),
@@ -192,9 +197,9 @@ with tf.Session() as session:
     try:
         for i in range(1000):
             # estimate the error on the test dataset
-            (err_0, err_1, corr) = error(10, lambda: session.run(next_batch_test))
-            tprint("error %.2f = %.2f + %.2f, correlation %.2f, iteration %d"
-                % (err_0 + err_1, err_0, err_1, corr, i))
+            (err_0, err_1, corr, err_t) = error(100, lambda: session.run(next_batch_test))
+            tprint("error %.2f = %.2f + %.2f, correlation %.2f, iteration %d, delay %.1fs"
+                % (err_0 + err_1, err_0, err_1, corr, i, err_t))
 
             # adjust the DCNN weights on the main dataset
             for _ in range(1000):

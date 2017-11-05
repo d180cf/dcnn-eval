@@ -7,6 +7,7 @@ import numpy as np
 import random
 import tensorflow as tf
 
+print('Python %s' % (sys.version))
 print('TensorFlow %s' % (tf.__version__))
 
 ds_main = sys.argv[1] # .tfrecords file with the main dataset
@@ -144,12 +145,13 @@ def conv2d(x, W):
 images = tf.placeholder(tf.float32, shape=[None, N, N, F])
 labels = tf.placeholder(tf.float32, shape=[None, 2])
 
-def make_dcnn():
+# www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf
+def make_dcnn_1(K = 1):
     def conv(n):
-        _krnl = weights([n, n, F, 1])
-        _bias = bias([1])
+        _krnl = weights([n, n, F, K])
+        _bias = bias([K])
         _conv = tf.nn.elu(conv2d(images, _krnl) + _bias)
-        return tf.reshape(_conv, [-1, (N - (n - 1))**2])
+        return tf.reshape(_conv, [-1, K*(N - (n - 1))**2])
 
     def conn(x, m, n):
         _krnl = weights([m, n])
@@ -164,11 +166,11 @@ def make_dcnn():
         conv(4),
         conv(5)], 1)
 
-    layer_2 = tf.nn.elu(conn(layer_1, 415, 150))
-    layer_3 = tf.nn.elu(conn(layer_2, 150, 80))
-    layer_4 = tf.nn.elu(conn(layer_3, 80, 20))
+    layer_2 = tf.nn.elu(conn(layer_1, K*415, K*150))
+    layer_3 = tf.nn.elu(conn(layer_2, K*150, K*80))
+    layer_4 = tf.nn.elu(conn(layer_3, K*80, K*20))
 
-    output = conn(layer_4, 20, 2)
+    output = conn(layer_4, K*20, 2)
 
     return (
         tf.nn.softmax(output),
@@ -178,7 +180,7 @@ def make_dcnn():
                     labels=labels,
                     logits=output))))
 
-(prediction, optimizer) = make_dcnn()
+(prediction, optimizer) = make_dcnn_1(1)
 
 with tf.Session() as session:
     iterator_main = dataset_main.make_initializable_iterator()
@@ -193,9 +195,9 @@ with tf.Session() as session:
     session.run(tf.global_variables_initializer())
 
     try:
-        for i in range(200):
+        for i in range(1000):
             # estimate the error on the test dataset
-            (err_0, err_1, corr) = error(50, lambda: session.run(next_batch_test))
+            (err_0, err_1, corr) = error(10, lambda: session.run(next_batch_test))
             tprint("error %.2f = %.2f + %.2f, correlation %.2f, iteration %d"
                 % (err_0 + err_1, err_0, err_1, corr, i))
 

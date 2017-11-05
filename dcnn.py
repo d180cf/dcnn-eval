@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import time
+import datetime
 import numpy as np
 import random
 import tensorflow as tf
@@ -12,6 +13,12 @@ ds_main = sys.argv[1] # .tfrecords file with the main dataset
 ds_test = sys.argv[2] # .tfrecords file with the test dataset
 N = int(sys.argv[3]) # board frame size, e.g. 11 x 11
 F = int(sys.argv[4]) # the number of features features, e.g. 5
+
+T = time.time()
+print('T = ' + datetime.datetime.now().isoformat())
+
+def tprint(*args):
+    print('[T+%06.1fs]' % (time.time() - T), *args)
 
 def parse(example):
     features = tf.parse_single_example(example, {
@@ -68,10 +75,10 @@ def make_dataset(filepath):
     dataset = dataset.batch(32)
     return dataset
 
-print('Initializing the main dataset...')    
+tprint('Initializing the main dataset...')    
 dataset_main = make_dataset(ds_main)
 
-print('Initializing the test dataset...')    
+tprint('Initializing the test dataset...')    
 dataset_test = make_dataset(ds_test)
 
 def error(count, next_batch):
@@ -182,14 +189,14 @@ with tf.Session() as session:
     next_batch_test = iterator_test.get_next()    
     session.run(iterator_test.initializer)    
 
-    print('Initializing global variables...')
+    tprint('Initializing global variables...')
     session.run(tf.global_variables_initializer())
 
     try:
         for i in range(1000):
             # estimate the error on the test dataset
             (err_0, err_1, corr) = error(50, lambda: session.run(next_batch_test))
-            print("error %.2f = %.2f + %.2f, correlation %.2f, iteration %d"
+            tprint("error %.2f = %.2f + %.2f, correlation %.2f, iteration %d"
                 % (err_0 + err_1, err_0, err_1, corr, i))
 
             # adjust the DCNN weights on the main dataset

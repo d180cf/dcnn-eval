@@ -160,6 +160,30 @@ def make_dcnn_0():
     e = tf.square(y - labels)
     return (y, tf.train.GradientDescentOptimizer(0.5).minimize(e))
 
+# applies a 3x3 convolution, then a dense layer, then readout
+# highest observed accuracy: 0.75
+def make_dcnn_2():    
+    # 3x3 convolution
+    b1 = bias([32])
+    w1 = weights([3, 3, F, 32])
+    h1 = tf.nn.relu(tf.nn.conv2d(images, w1, [1, 1, 1, 1], 'VALID'))
+
+    # dense layer
+    n = 32*(N - 2)**2
+    h = tf.reshape(h1, [-1, n])
+    b3 = bias([128])
+    w3 = weights([n, 128])
+    h2 = tf.nn.relu(tf.matmul(h, w3) + b3)
+
+    # readout
+    b2 = bias([1])
+    w2 = weights([128, 1])
+    y = tf.sigmoid(tf.matmul(h2, w2) + b2)
+
+    y = tf.reshape(y, [-1])    
+    e = tf.square(y - labels)
+    return (y, tf.train.AdamOptimizer(1e-4).minimize(e))
+
 # www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf
 # highest observed accuracy: 0.82
 def make_dcnn_1():
@@ -187,7 +211,7 @@ def make_dcnn_1():
     avg_error = tf.square(output - labels)
     return (output, tf.train.AdamOptimizer(1e-4).minimize(avg_error))
 
-(prediction, optimizer) = make_dcnn_1()
+(prediction, optimizer) = make_dcnn_2()
 
 with tf.Session() as session:
     iterator_main = dataset_main.make_initializable_iterator()

@@ -160,25 +160,46 @@ def make_dcnn_0():
     e = tf.square(y - labels)
     return (y, tf.train.GradientDescentOptimizer(0.5).minimize(e))
 
-# applies a 3x3 convolution, then a dense layer, then readout
-# highest observed accuracy: 0.75
-def make_dcnn_2():    
-    # 3x3 convolution
-    b1 = bias([32])
-    w1 = weights([3, 3, F, 32])
-    h1 = tf.nn.relu(tf.nn.conv2d(images, w1, [1, 1, 1, 1], 'VALID'))
+# applies 3x3 convolutions, then a dense layer, then readout
+# highest observed accuracy:
+#   0.77 with 1 convolution
+#   0.79 with 2 convolutions
+def make_dcnn_2():
+    def conv(x, k, n):
+        b = bias([n])
+        f = int(x.shape[3]) # [-1, 9, 9, 5]
+        w = weights([k, k, f, n])
+        return tf.nn.relu(tf.nn.conv2d(x, w, [1, 1, 1, 1], 'SAME'))
+
+    def dense(x, n):
+        s = x.shape # [-1, 9, 9, 32]
+        m = int(s[1]*s[2]*s[3])
+        x = tf.reshape(x, [-1, m])
+        b = bias([n])
+        w = weights([m, n])
+        return tf.nn.relu(tf.matmul(x, w) + b)
+
+    def readout(x):
+        n = int(x.shape[1]) # [-1, 128]
+        b = bias([1])
+        w = weights([n, 1])
+        return tf.sigmoid(tf.matmul(x, w) + b)
+
+    x = images
+    print(x.shape)
+
+    # a few 3x3 convolutions
+    for i in range(2):
+        x = conv(x, 3, 32)
+        print(x.shape)
 
     # dense layer
-    n = 32*(N - 2)**2
-    h = tf.reshape(h1, [-1, n])
-    b3 = bias([128])
-    w3 = weights([n, 128])
-    h2 = tf.nn.relu(tf.matmul(h, w3) + b3)
+    x = dense(x, 128)
+    print(x.shape)
 
     # readout
-    b2 = bias([1])
-    w2 = weights([128, 1])
-    y = tf.sigmoid(tf.matmul(h2, w2) + b2)
+    y = readout(x)
+    print(y.shape)
 
     y = tf.reshape(y, [-1])    
     e = tf.square(y - labels)

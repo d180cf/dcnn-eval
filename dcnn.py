@@ -153,7 +153,8 @@ def make_dcnn_1(K = 1):
         _conv = tf.nn.elu(conv2d(images, _krnl) + _bias)
         return tf.reshape(_conv, [-1, K*(N - (n - 1))**2])
 
-    def conn(x, m, n):
+    def conn(x, n):
+        m = int(x.shape[1])
         _krnl = weights([m, n])
         _bias = bias([n])
         return tf.matmul(x, _krnl) + _bias
@@ -166,11 +167,11 @@ def make_dcnn_1(K = 1):
         conv(4),
         conv(5)], 1)
 
-    layer_2 = tf.nn.elu(conn(layer_1, K*415, K*150))
-    layer_3 = tf.nn.elu(conn(layer_2, K*150, K*80))
-    layer_4 = tf.nn.elu(conn(layer_3, K*80, K*20))
+    layer_2 = tf.nn.elu(conn(layer_1, K*150))
+    layer_3 = tf.nn.elu(conn(layer_2, K*80))
+    layer_4 = tf.nn.elu(conn(layer_3, K*20))
 
-    output = conn(layer_4, K*20, 2)
+    output = conn(layer_4, 2)
 
     return (
         tf.nn.softmax(output),

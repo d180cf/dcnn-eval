@@ -160,18 +160,12 @@ def make_dcnn_1():
         return tf.matmul(x, _krnl) + _bias
 
     # shape = [(N - 0)**2 + (N - 1)**2 + (N - 2)**2 + ...]
-    layer_1 = tf.concat([
-        conv(1),
-        conv(2),
-        conv(3),
-        conv(4),
-        conv(5)], 1)
+    layer_0 = tf.concat([conv(n + 1) for n in range(N)], 1)
 
-    layer_2 = tf.nn.elu(conn(layer_1, 150))
-    layer_3 = tf.nn.elu(conn(layer_2, 80))
-    layer_4 = tf.nn.elu(conn(layer_3, 20))
+    layer_1 = tf.nn.elu(conn(layer_0, 50))
+    layer_2 = tf.nn.elu(conn(layer_1, 30))
 
-    output = conn(layer_4, 2)
+    output = conn(layer_2, 2)
 
     return (
         tf.nn.softmax(output),

@@ -149,7 +149,19 @@ def conv2d(x, W):
 images = tf.placeholder(tf.float32, shape=[None, N, N, F])
 labels = tf.placeholder(tf.float32, shape=[None, 2])
 
+# perhaps the simplest NN possible: a weighthed sum of all features;
+# highest observed accuracy: 0.61
+def make_dcnn_0():    
+    x = tf.reshape(images, [-1, N*N*F])
+    b = bias([1])
+    w = weights([N*N*F, 1])
+    y = tf.sigmoid(tf.matmul(x, w) + b)
+    e = tf.reduce_mean(tf.square(y - labels[:, 1:2]), 1)
+    return (tf.concat([1 - y, y], 1),
+        tf.train.GradientDescentOptimizer(0.5).minimize(e))
+
 # www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf
+# highest observed accuracy: 0.82
 def make_dcnn_1():
     def conv(n):
         _krnl = weights([n, n, F, 1])
@@ -180,7 +192,7 @@ def make_dcnn_1():
                     labels=labels,
                     logits=output))))
 
-(prediction, optimizer) = make_dcnn_1()
+(prediction, optimizer) = make_dcnn_0()
 
 with tf.Session() as session:
     iterator_main = dataset_main.make_initializable_iterator()

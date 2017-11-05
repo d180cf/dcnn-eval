@@ -19,8 +19,8 @@ if suppress_tf_warning:
 T = time.time()
 print('T = ' + datetime.datetime.now().isoformat())
 
-def tprint(*args):
-    print('[T+%06.1fs]' % (time.time() - T), *args)
+def tprint(text):
+    print('[T+%06.1fs] %s' % (time.time() - T, text))
 
 def parse(example):
     features = tf.parse_single_example(example, {

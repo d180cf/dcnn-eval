@@ -115,11 +115,11 @@ def error(count, next_batch):
             if y == 1 and x < 0.5:
                 err_1 += 1
 
-            n += 1
+            n += 1.0
     
     correlation = (n*sum_xy - sum_x*sum_y) / ((n*sum_x2 - sum_x**2)*(n*sum_y2 - sum_y**2))**0.5
 
-    return (err_0/n, err_1/n, correlation)
+    return (1.0*err_0/n, 1.0*err_1/n, correlation)
 
 def weights(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)

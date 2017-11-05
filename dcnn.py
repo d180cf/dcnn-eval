@@ -146,12 +146,12 @@ images = tf.placeholder(tf.float32, shape=[None, N, N, F])
 labels = tf.placeholder(tf.float32, shape=[None, 2])
 
 # www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf
-def make_dcnn_1(K = 1):
+def make_dcnn_1():
     def conv(n):
-        _krnl = weights([n, n, F, K])
-        _bias = bias([K])
+        _krnl = weights([n, n, F, 1])
+        _bias = bias([1])
         _conv = tf.nn.elu(conv2d(images, _krnl) + _bias)
-        return tf.reshape(_conv, [-1, K*(N - (n - 1))**2])
+        return tf.reshape(_conv, [-1, (N - n + 1)**2])
 
     def conn(x, n):
         m = int(x.shape[1])
@@ -167,9 +167,9 @@ def make_dcnn_1(K = 1):
         conv(4),
         conv(5)], 1)
 
-    layer_2 = tf.nn.elu(conn(layer_1, K*150))
-    layer_3 = tf.nn.elu(conn(layer_2, K*80))
-    layer_4 = tf.nn.elu(conn(layer_3, K*20))
+    layer_2 = tf.nn.elu(conn(layer_1, 150))
+    layer_3 = tf.nn.elu(conn(layer_2, 80))
+    layer_4 = tf.nn.elu(conn(layer_3, 20))
 
     output = conn(layer_4, 2)
 
@@ -181,7 +181,7 @@ def make_dcnn_1(K = 1):
                     labels=labels,
                     logits=output))))
 
-(prediction, optimizer) = make_dcnn_1(1)
+(prediction, optimizer) = make_dcnn_1()
 
 with tf.Session() as session:
     iterator_main = dataset_main.make_initializable_iterator()

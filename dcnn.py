@@ -7,12 +7,14 @@ import numpy as np
 import random
 import tensorflow as tf
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-
 ds_main = sys.argv[1] # .tfrecords file with the main dataset
 ds_test = sys.argv[2] # .tfrecords file with the test dataset
 N = int(sys.argv[3]) # board frame size, e.g. 11 x 11
 F = int(sys.argv[4]) # the number of features features, e.g. 5
+suppress_tf_warning = len(sys.argv) > 5 and sys.argv[5]
+
+if suppress_tf_warning:
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 T = time.time()
 print('T = ' + datetime.datetime.now().isoformat())

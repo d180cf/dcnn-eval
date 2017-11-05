@@ -7,14 +7,12 @@ import numpy as np
 import random
 import tensorflow as tf
 
+print('TensorFlow %s' % (tf.__version__))
+
 ds_main = sys.argv[1] # .tfrecords file with the main dataset
 ds_test = sys.argv[2] # .tfrecords file with the test dataset
 N = int(sys.argv[3]) # board frame size, e.g. 11 x 11
 F = int(sys.argv[4]) # the number of features features, e.g. 5
-suppress_tf_warning = len(sys.argv) > 5 and sys.argv[5]
-
-if suppress_tf_warning:
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 T = time.time()
 print('T = ' + datetime.datetime.now().isoformat())
@@ -70,9 +68,9 @@ def parse(example):
     return (label, image)
 
 def make_dataset(filepath):
-    dataset = tf.contrib.data.TFRecordDataset(filepath)
+    dataset = tf.data.TFRecordDataset(filepath)
     dataset = dataset.map(parse)
-    dataset = dataset.shuffle(1024)
+    dataset = dataset.shuffle(16384)
     dataset = dataset.repeat()
     dataset = dataset.batch(32)
     return dataset
@@ -195,7 +193,7 @@ with tf.Session() as session:
     session.run(tf.global_variables_initializer())
 
     try:
-        for i in range(1000):
+        for i in range(200):
             # estimate the error on the test dataset
             (err_0, err_1, corr) = error(50, lambda: session.run(next_batch_test))
             tprint("error %.2f = %.2f + %.2f, correlation %.2f, iteration %d"

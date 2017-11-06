@@ -74,9 +74,9 @@ def parse(example):
 def make_dataset(filepath):
     dataset = tf.data.TFRecordDataset(filepath)
     dataset = dataset.map(parse)
-    dataset = dataset.shuffle(16384)
+    dataset = dataset.shuffle(1024)
     dataset = dataset.repeat()
-    dataset = dataset.batch(32)
+    dataset = dataset.batch(16)
     return dataset
 
 tprint('Initializing the main dataset...')    
@@ -161,10 +161,8 @@ def make_dcnn_0():
     return (y, tf.train.GradientDescentOptimizer(0.5).minimize(e))
 
 # applies 3x3 convolutions, then a dense layer, then readout
-# highest observed accuracy:
-#   0.77 with 1 convolution
-#   0.79 with 2 convolutions
-def make_dcnn_2():
+# highest observed accuracy: 0.79
+def make_dcnn_2(n_conv = 3, n_filters = 16, n_output = 128):
     def conv(x, k, n):
         b = bias([n])
         f = int(x.shape[3]) # [-1, 9, 9, 5]
@@ -188,13 +186,13 @@ def make_dcnn_2():
     x = images
     print(x.shape)
 
-    # a few 3x3 convolutions
-    for i in range(2):
-        x = conv(x, 3, 32)
+    # 3x3 convolutions with 16 filters
+    for i in range(n_conv):
+        x = conv(x, 3, n_filters)
         print(x.shape)
 
     # dense layer
-    x = dense(x, 128)
+    x = dense(x, n_output)
     print(x.shape)
 
     # readout
@@ -203,7 +201,7 @@ def make_dcnn_2():
 
     y = tf.reshape(y, [-1])    
     e = tf.square(y - labels)
-    return (y, tf.train.AdamOptimizer(1e-4).minimize(e))
+    return (y, tf.train.GradientDescentOptimizer(0.003).minimize(e))
 
 # www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf
 # highest observed accuracy: 0.82
@@ -254,7 +252,7 @@ with tf.Session() as session:
                 % (err_0 + err_1, err_0, err_1, corr, i, err_t))
 
             # adjust the DCNN weights on the main dataset
-            for _ in range(1000):
+            for _ in range(3000):
                 (_labels, _images) = session.run(next_batch_main)
                 optimizer.run(feed_dict={
                     labels: _labels,

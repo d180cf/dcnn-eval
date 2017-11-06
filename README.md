@@ -7,10 +7,9 @@ for the single black stone:
 
 <img src="https://rawgit.com/d180cf/tsumego.js/master/docs/pics/13083.svg" height="200pt" title="goproblems.com/13083" />
 
-Currently, the best result is 80% accuracy. Note, that
-a random number generator would have 50% accuracy because
-there are only two outputs: safe or unsafe.
-
+Currently, the best result is 85% accuracy on problems with
+7 or more available moves. Note, that a random number generator
+would have 50% accuracy because there are only two outputs.
 
 # Features
 

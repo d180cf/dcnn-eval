@@ -255,7 +255,7 @@ def make_dcnn_ag(n_conv = 3, n_filters = 32, n_output = 64):
 
     y = tf.reshape(y, [-1])    
     e = tf.square(y - labels)
-    return (y, tf.train.GradientDescentOptimizer(0.003).minimize(e))
+    return (y, tf.train.GradientDescentOptimizer(learning_rate).minimize(e))
 
 # www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf
 # highest observed accuracy: 0.82
@@ -284,6 +284,7 @@ def make_dcnn_1():
     avg_error = tf.square(output - labels)
     return (output, tf.train.AdamOptimizer(1e-4).minimize(avg_error))
 
+learning_rate = tf.placeholder(tf.float32)
 (prediction, optimizer) = make_dcnn_ag()
 
 with tf.Session() as session:
@@ -298,6 +299,8 @@ with tf.Session() as session:
     tprint('Initializing global variables...')
     session.run(tf.global_variables_initializer())
 
+    lr = 0.01
+
     try:
         for i in range(1000):
             # estimate the error on the test dataset
@@ -305,10 +308,16 @@ with tf.Session() as session:
             tprint("error %.2f = %.2f + %.2f, correlation %.2f, iteration %d, delay %.1fs"
                 % (err_0 + err_1, err_0, err_1, corr, i, err_t))
 
+            # apply exp decay to the learning rate
+            if i % 100 == 0:
+                lr *= 0.5
+                tprint('learning rate = %f' % (lr))
+
             # adjust the DCNN weights on the main dataset
             for _ in range(1500):
                 (_labels, _images) = session.run(next_batch_main)
                 optimizer.run(feed_dict={
+                    learning_rate: lr,
                     labels: _labels,
                     images: _images })
     except KeyboardInterrupt:

@@ -203,6 +203,60 @@ def make_dcnn_2(n_conv = 3, n_filters = 16, n_output = 128):
     e = tf.square(y - labels)
     return (y, tf.train.GradientDescentOptimizer(0.003).minimize(e))
 
+# An AlpgaGo-style value network. The input is a 11x11:F image stack.
+# 1. The first 5x5:K convolution maps it to a 7x7:K image stack.
+# 2. A few 3x3:K convolutions with 0-padded input.
+# 3. A 1x1:1 convolution yields a 7x7:1 image.
+# 4. Finally a fully connected layer with 64 outputs and a readout.
+# Highest observed accuracy: 0.84 (3 layers, 32 filters)
+def make_dcnn_ag(n_conv = 3, n_filters = 32, n_output = 64):
+    # "SAME" for 0 padding, "VALID" for no padding
+    def conv(x, k, n, padding):
+        f = int(x.shape[3]) # [-1, 9, 9, 5]
+        w = weights([k, k, f, n])
+        return tf.nn.relu(tf.nn.conv2d(x, w, [1, 1, 1, 1], padding))
+
+    def conn(x, n):
+        s = x.shape # [-1, 9, 9, 32]
+        m = int(s[1]*s[2]*s[3])
+        x = tf.reshape(x, [-1, m])
+        b = bias([n])
+        w = weights([m, n])
+        return tf.nn.relu(tf.matmul(x, w) + b)
+
+    def readout(x):
+        n = int(x.shape[1]) # [-1, 128]
+        w = weights([n, 1])
+        return tf.sigmoid(tf.matmul(x, w))
+
+    x = images
+    print('input', x.shape)
+
+    # a 5x5:K convolution
+    x = conv(x, 5, n_filters, 'VALID')
+    print('5x5', x.shape)
+
+    # 3x3:K convolutions
+    for i in range(n_conv):
+        x = conv(x, 3, n_filters, 'SAME')
+        print('3x3', i, x.shape)
+
+    # 1x1:1 convolution
+    x = conv(x, 1, 1, 'SAME')
+    print('1x1', x.shape)
+
+    # a fully connected layer
+    x = conn(x, n_output)
+    print(x.shape)
+
+    # readout
+    y = readout(x)
+    print(y.shape)
+
+    y = tf.reshape(y, [-1])    
+    e = tf.square(y - labels)
+    return (y, tf.train.GradientDescentOptimizer(0.003).minimize(e))
+
 # www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf
 # highest observed accuracy: 0.82
 def make_dcnn_1():
@@ -230,7 +284,7 @@ def make_dcnn_1():
     avg_error = tf.square(output - labels)
     return (output, tf.train.AdamOptimizer(1e-4).minimize(avg_error))
 
-(prediction, optimizer) = make_dcnn_2()
+(prediction, optimizer) = make_dcnn_ag()
 
 with tf.Session() as session:
     iterator_main = dataset_main.make_initializable_iterator()
@@ -252,7 +306,7 @@ with tf.Session() as session:
                 % (err_0 + err_1, err_0, err_1, corr, i, err_t))
 
             # adjust the DCNN weights on the main dataset
-            for _ in range(3000):
+            for _ in range(1500):
                 (_labels, _images) = session.run(next_batch_main)
                 optimizer.run(feed_dict={
                     labels: _labels,

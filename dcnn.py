@@ -203,13 +203,13 @@ def make_dcnn_2(n_conv = 3, n_filters = 16, n_output = 128):
     e = tf.square(y - labels)
     return (y, tf.train.GradientDescentOptimizer(0.003).minimize(e))
 
-# An AlpgaGo-style value network. The input is a 11x11:F image stack.
+# An AlphaGo-style value network. The input is a 11x11:F image stack.
 # 1. The first 5x5:K convolution maps it to a 7x7:K image stack.
 # 2. A few 3x3:K convolutions with 0-padded input.
 # 3. A 1x1:1 convolution yields a 7x7:1 image.
 # 4. Finally a fully connected layer with 64 outputs and a readout.
 # Highest observed accuracy: 0.84 (3 layers, 32 filters)
-def make_dcnn_ag(n_conv = 3, n_filters = 16, n_output = 16):
+def make_dcnn_ag(n_conv = 3, n_filters = 64, n_output = 64):
     # "SAME" for 0 padding, "VALID" for no padding
     def conv(x, k, n, padding):
         f = int(x.shape[3]) # [-1, 9, 9, 5]
@@ -220,9 +220,8 @@ def make_dcnn_ag(n_conv = 3, n_filters = 16, n_output = 16):
         s = x.shape # [-1, 9, 9, 32]
         m = int(s[1]*s[2]*s[3])
         x = tf.reshape(x, [-1, m])
-        b = bias([n])
         w = weights([m, n])
-        return tf.nn.relu(tf.matmul(x, w) + b)
+        return tf.nn.relu(tf.matmul(x, w))
 
     def readout(x):
         n = int(x.shape[1]) # [-1, 128]
@@ -288,6 +287,9 @@ def save_vars():
 
 learning_rate = tf.placeholder(tf.float32)
 (prediction, optimizer) = make_dcnn_ag()
+
+for x in tf.trainable_variables():
+    print(x)
 
 with tf.Session() as session:
     iterator_main = dataset_main.make_initializable_iterator()

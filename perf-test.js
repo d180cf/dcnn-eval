@@ -37,16 +37,16 @@ let p_max = -Infinity;
 let p_sum = 0; // for p_avg
 
 for (let i = 0; i < k; i++) {
+    const x = a[Math.random() * a.length | 0];
+    const y = a[Math.random() * a.length | 0];
     const t = Date.now();
-    const s = mul(
-        a[Math.random() * a.length | 0],
-        a[Math.random() * a.length | 0]);
+    const s = mul(x, y);
     const p = n / (Date.now() - t) / 1000;
 
     p_min = Math.min(p_min, p);
     p_max = Math.max(p_max, p);
     p_sum += p;
 
-    if (i % 25 == 0)
-        console.log(`min = ${p_min.toFixed(1)} G/s; max = ${p_max.toFixed(1)} G/s; avg = ${(p_sum / (i + 1)).toFixed(1)} G/s`);
+    if (i % 50 == 0)
+        console.log(`min = ${p_min.toFixed(1)} M/s; max = ${p_max.toFixed(1)} M/s; avg = ${(p_sum / (i + 1)).toFixed(1)} M/s`);
 }

@@ -48,8 +48,8 @@ convolution layers of size `3x3:16:16` (the number of filters is TBD, but the
 kernel size `3x3` is pretty much standard and is used in state-of-the-art programs like [AGZ](https://deepmind.com/blog/alphago-zero-learning-scratch/)).
 Applying such a convolution to an input image stack of size `7x7:16` needs `7x7x3x3x16x16 = 112K`
 multiplications-additions and if there are 3-4 layers this number grows to `500K`
-which might seem a lot, but it turns out the the current JS V8 makes `~50 G/s` so it
-can apply this convolution `100K` times a second. This doesn't take into account the fact
+which might seem a lot, but it turns out the the current JS V8 makes `~50 M/s` so it
+can apply this convolution `100` times a second. This doesn't take into account the fact
 that in web it can use multiple threads (web workers) and GPU (weblas, keras.js, etc.).
 
 There is a [paper](http://www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf)

@@ -14,6 +14,7 @@ ds_main = sys.argv[1] # .tfrecords file with the main dataset
 ds_test = sys.argv[2] # .tfrecords file with the test dataset
 N = int(sys.argv[3]) # board frame size, e.g. 11 x 11
 F = int(sys.argv[4]) # the number of features features, e.g. 5
+vars_file = sys.argv[5] # the checkpoint file for weights
 
 print('Target frame: %dx%d' % (N, N))
 print('Features: %d' % (F))
@@ -94,7 +95,6 @@ def error(count, next_batch):
     sum_xy = 0
     sum_x2 = 0
     sum_y2 = 0
-    t = time.time()
 
     for _ in range(count):
         (_labels, _images) = next_batch()
@@ -131,7 +131,7 @@ def error(count, next_batch):
     
     correlation = (n*sum_xy - sum_x*sum_y) / ((n*sum_x2 - sum_x**2)*(n*sum_y2 - sum_y**2))**0.5
 
-    return (1.0*err_0/n, 1.0*err_1/n, correlation, time.time() - t)
+    return (1.0*err_0/n, 1.0*err_1/n, correlation)
 
 def weights(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
@@ -209,7 +209,7 @@ def make_dcnn_2(n_conv = 3, n_filters = 16, n_output = 128):
 # 3. A 1x1:1 convolution yields a 7x7:1 image.
 # 4. Finally a fully connected layer with 64 outputs and a readout.
 # Highest observed accuracy: 0.84 (3 layers, 32 filters)
-def make_dcnn_ag(n_conv = 3, n_filters = 32, n_output = 64):
+def make_dcnn_ag(n_conv = 3, n_filters = 16, n_output = 16):
     # "SAME" for 0 padding, "VALID" for no padding
     def conv(x, k, n, padding):
         f = int(x.shape[3]) # [-1, 9, 9, 5]
@@ -230,28 +230,22 @@ def make_dcnn_ag(n_conv = 3, n_filters = 32, n_output = 64):
         return tf.sigmoid(tf.matmul(x, w))
 
     x = images
-    print('input', x.shape)
 
     # a 5x5:K convolution
     x = conv(x, 5, n_filters, 'VALID')
-    print('5x5', x.shape)
 
     # 3x3:K convolutions
     for i in range(n_conv):
         x = conv(x, 3, n_filters, 'SAME')
-        print('3x3', i, x.shape)
 
     # 1x1:1 convolution
     x = conv(x, 1, 1, 'SAME')
-    print('1x1', x.shape)
 
     # a fully connected layer
     x = conn(x, n_output)
-    print(x.shape)
 
     # readout
     y = readout(x)
-    print(y.shape)
 
     y = tf.reshape(y, [-1])    
     e = tf.square(y - labels)
@@ -284,6 +278,14 @@ def make_dcnn_1():
     avg_error = tf.square(output - labels)
     return (output, tf.train.AdamOptimizer(1e-4).minimize(avg_error))
 
+def save_vars():
+    data = []
+    for x in tf.trainable_variables():
+        y = x.eval().reshape([-1])
+        data.append([x.name, x.shape.as_list(), y.tolist()])
+    with open(vars_file, 'w') as file:
+        json.dump(data, file)
+
 learning_rate = tf.placeholder(tf.float32)
 (prediction, optimizer) = make_dcnn_ag()
 
@@ -299,17 +301,27 @@ with tf.Session() as session:
     tprint('Initializing global variables...')
     session.run(tf.global_variables_initializer())
 
-    lr = 0.01
+    lr = 0.003
 
     try:
         for i in range(1000):
+            tprint('epoch %d' % i)
+
             # estimate the error on the test dataset
-            (err_0, err_1, corr, err_t) = error(150, lambda: session.run(next_batch_test))
-            tprint("error %.2f = %.2f + %.2f, correlation %.2f, iteration %d, delay %.1fs"
-                % (err_0 + err_1, err_0, err_1, corr, i, err_t))
+            t0 = time.time()            
+            (err_0, err_1, corr) = error(150, lambda: session.run(next_batch_test))
+            tprint("error %.2f = %.2f + %.2f, correlation %.2f"
+                % (err_0 + err_1, err_0, err_1, corr))
+
+            t1 = time.time()
+            save_vars()
+            tprint('model saved to: %s' % vars_file)
+
+            t2 = time.time()
+            tprint('delays: error = %.1fs; saver = %.1fs' % (t1 - t0, t2 - t1))
 
             # apply exp decay to the learning rate
-            if i % 100 == 0:
+            if i > 0 and i % 100 == 0:
                 lr *= 0.5
                 tprint('learning rate = %f' % (lr))
 
@@ -324,5 +336,5 @@ with tf.Session() as session:
         tprint('Terminated by Ctrl+C')
 
     tprint('Estimating accuracy on the entire test set...')
-    (err_0, err_1, corr, err_t) = error(1000, lambda: session.run(next_batch_test))
+    (err_0, err_1, corr) = error(1000, lambda: session.run(next_batch_test))
     tprint("error %.2f = %.2f + %.2f, correlation %.2f" % (err_0 + err_1, err_0, err_1, corr))

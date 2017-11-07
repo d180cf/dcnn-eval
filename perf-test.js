@@ -1,5 +1,7 @@
+"use strict";
+
 // tests how fast JS V8 does multiplications-additions
-// so far the results are impressive: 48 G ops per second
+// so far the results are impressive: 48 M ops per second
 // where 1 op = 1 mul + 1 add
 
 const k = 500;
@@ -12,7 +14,7 @@ for (let i = 0; i < a.length; i++) {
         a[i][j] = Math.random() - 0.5;
 }
 
-function mul(x, y) {
+function dotp(x, y) {
     let n = x.length;
     let s = 0.0;
 
@@ -40,7 +42,7 @@ for (let i = 0; i < k; i++) {
     const x = a[Math.random() * a.length | 0];
     const y = a[Math.random() * a.length | 0];
     const t = Date.now();
-    const s = mul(x, y);
+    const s = dotp(x, y);
     const p = n / (Date.now() - t) / 1000;
 
     p_min = Math.min(p_min, p);

@@ -304,7 +304,7 @@ with tf.Session() as session:
     try:
         for i in range(1000):
             # estimate the error on the test dataset
-            (err_0, err_1, corr, err_t) = error(100, lambda: session.run(next_batch_test))
+            (err_0, err_1, corr, err_t) = error(150, lambda: session.run(next_batch_test))
             tprint("error %.2f = %.2f + %.2f, correlation %.2f, iteration %d, delay %.1fs"
                 % (err_0 + err_1, err_0, err_1, corr, i, err_t))
 
@@ -321,4 +321,8 @@ with tf.Session() as session:
                     labels: _labels,
                     images: _images })
     except KeyboardInterrupt:
-        sys.exit()
+        tprint('Terminated by Ctrl+C')
+
+    tprint('Estimating accuracy on the entire test set...')
+    (err_0, err_1, corr, err_t) = error(1000, lambda: session.run(next_batch_test))
+    tprint("error %.2f = %.2f + %.2f, correlation %.2f" % (err_0 + err_1, err_0, err_1, corr))

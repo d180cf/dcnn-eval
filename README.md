@@ -7,7 +7,7 @@ for the single black stone:
 
 <img src="https://rawgit.com/d180cf/tsumego.js/master/docs/pics/13083.svg" height="200pt" title="goproblems.com/13083" />
 
-Currently, the best result is 85% accuracy on problems with
+Currently, the best result is 86% accuracy on problems with
 7 or more available moves. Note, that a random number generator
 would have 50% accuracy because there are only two outputs.
 
@@ -40,9 +40,17 @@ More features to be implemented:
 This set of feature tensors is fed to a Python script that uses
 [TensorFlow](https://github.com/tensorflow/tensorflow) to find the DCNN parameters.
 Once the DCNN parameters are found, they can be exported to a file and the tsumego
-solver can use [keras.js](https://github.com/transcranial/keras-js)
-to evaluate the board and refine the search. The DCNN can be quickly trained on
-[AWS](https://aws.amazon.com/tensorflow).
+solver can use [keras.js](https://github.com/transcranial/keras-js) or [WebDNN](https://github.com/mil-tokyo/webdnn)
+to evaluate the board and refine the search. The DCNN can be quickly trained on [AWS](https://aws.amazon.com/tensorflow).
+
+A typical DCNN consist of a few
+convolution layers of size `3x3:16:16` (the number of filters is TBD, but the
+kernel size `3x3` is pretty much standard and is used in state-of-the-art programs like AGZ).
+Applying such a convolution to an input image stack `7x7:16` needs `7x7x3x3x16x16 = 112K`
+multiplications-additions and if there are 3-4 layers this number grows to `500K`
+which might seem a lot, but it turns out the the current JS V8 makes `~50 G/s` so it
+can apply this convolution `100K` times a second. This doesn't take into account
+that in web it can use multiple threads (web works) and GPU (weblas, keras.js, etc.).
 
 There is a [paper](http://www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf)
 that describes a `8x8->140->50->30->2` DCNN with accuracy 95%. This idea is implemented here:

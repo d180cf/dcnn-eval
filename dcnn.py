@@ -100,6 +100,7 @@ def error(count, next_batch):
         (_labels, _images) = next_batch()
 
         results = prediction.eval(feed_dict={
+            phase_train: False,
             labels: _labels,
             images: _images })
 
@@ -148,6 +149,7 @@ def conv2d(x, W):
 
 images = tf.placeholder(tf.float32, shape=[None, N, N, F])
 labels = tf.placeholder(tf.float32, shape=[None])
+phase_train = tf.placeholder(tf.bool)
 
 # perhaps the simplest NN possible: a weighthed sum of all features;
 # highest observed accuracy: 0.61
@@ -210,11 +212,30 @@ def make_dcnn_2(n_conv = 3, n_filters = 16, n_output = 128):
 # 4. Finally a fully connected layer with 64 outputs and a readout.
 # Highest observed accuracy: 0.84 (3 layers, 32 filters)
 def make_dcnn_ag(n_conv = 3, n_filters = 64, n_output = 64):
+    def bnorm(x):
+        n_out = int(x.shape[3])
+        with tf.variable_scope('bn'):
+            beta = tf.Variable(tf.constant(0.0, shape=[n_out]), name='beta', trainable=True)
+            gamma = tf.Variable(tf.constant(1.0, shape=[n_out]), name='gamma', trainable=True)
+            batch_mean, batch_var = tf.nn.moments(x, [0,1,2], name='moments')
+            ema = tf.train.ExponentialMovingAverage(decay=0.5)
+
+            def mean_var_with_update():
+                ema_apply_op = ema.apply([batch_mean, batch_var])
+                with tf.control_dependencies([ema_apply_op]):
+                    return tf.identity(batch_mean), tf.identity(batch_var)
+
+            mean, var = tf.cond(phase_train,
+                                mean_var_with_update,
+                                lambda: (ema.average(batch_mean), ema.average(batch_var)))
+            normed = tf.nn.batch_normalization(x, mean, var, beta, gamma, 1e-3)
+        return normed
+
     # "SAME" for 0 padding, "VALID" for no padding
     def conv(x, k, n, padding):
         f = int(x.shape[3]) # [-1, 9, 9, 5]
         w = weights([k, k, f, n])
-        return tf.nn.relu(tf.nn.conv2d(x, w, [1, 1, 1, 1], padding))
+        return tf.nn.conv2d(x, w, [1, 1, 1, 1], padding)
 
     def conn(x, n):
         s = x.shape # [-1, 9, 9, 32]
@@ -232,13 +253,19 @@ def make_dcnn_ag(n_conv = 3, n_filters = 64, n_output = 64):
 
     # a 5x5:K convolution
     x = conv(x, 5, n_filters, 'VALID')
+    # x = bnorm(x)
+    x = tf.nn.relu(x)
 
     # 3x3:K convolutions
     for i in range(n_conv):
         x = conv(x, 3, n_filters, 'SAME')
+        # x = bnorm(x)
+        x = tf.nn.relu(x)
 
     # 1x1:1 convolution
     x = conv(x, 1, 1, 'SAME')
+    # x = bnorm(x)
+    x = tf.nn.relu(x)
 
     # a fully connected layer
     x = conn(x, n_output)
@@ -331,7 +358,8 @@ with tf.Session() as session:
             for _ in range(1500):
                 (_labels, _images) = session.run(next_batch_main)
                 optimizer.run(feed_dict={
-                    learning_rate: lr,
+                    phase_train: True,
+                    learning_rate: lr,                    
                     labels: _labels,
                     images: _images })
     except KeyboardInterrupt:

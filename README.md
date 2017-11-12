@@ -60,6 +60,8 @@ that describes a `8x8->140->50->30->2` DCNN with accuracy 95%. This idea is impl
 
 Its accuracy on tsumegos with size 7+ appears to be 80%.
 
+![](tensorboard.png)
+
 # How inputs to DCNN are generated
 
 There is a set of 100 or so handmade (well, mostly taken from goproblems.com) tsumegos with proper outer wall and marked target. They are stored in the `sgf-problems` module.

@@ -15,11 +15,15 @@ ds_test = sys.argv[2] # .tfrecords file with the test dataset
 N = int(sys.argv[3]) # board frame size, e.g. 11 x 11
 F = int(sys.argv[4]) # the number of features features, e.g. 5
 vars_file = sys.argv[5] # the checkpoint file for weights
-err_log = sys.argv[6] # results on the validation set
-logs_path = sys.argv[7] # tensorboard logs
+logs_path = sys.argv[6] # tensorboard logs
 
 SHUFFLE_WINDOW = 8192
 BATCH_SIZE = 256
+EPOCH_DURATION = 10.0 # seconds
+NUM_EPOCHS = 1000
+LR_INITIAL = 0.5
+LR_FACTOR = 0.5
+LR_DECAY = 1e6
 
 print('Target frame: %dx%d' % (N, N))
 print('Features: %d' % (F))
@@ -28,7 +32,9 @@ T = time.time()
 print('T = ' + datetime.datetime.now().isoformat())
 
 def tprint(text):
-    print('[T+%.1fs] %s' % (time.time() - T, text))
+    dt = time.time() - T
+    s = '%.1fs' % dt if dt < 60 else '%.1fm' % (dt/60) if dt < 3600 else '%.1fh' % (dt/3600)
+    print('%8s %s' % ('T+' + s, text))
 
 def parse(example):
     features = tf.parse_single_example(example, {
@@ -106,7 +112,8 @@ def conv2d(x, W):
 
 images = tf.placeholder(tf.float32, shape=[None, N, N, F])
 labels = tf.placeholder(tf.float32, shape=[None])
-phase_train = tf.placeholder(tf.bool)
+is_training = tf.placeholder(tf.bool)
+learning_rate = tf.placeholder(tf.float32)
 
 # perhaps the simplest NN possible: a weighthed sum of all features;
 # highest observed accuracy: 0.60
@@ -114,10 +121,10 @@ def make_dcnn_fc1():
     x = tf.reshape(images, [-1, N*N*F])
     b = bias([1])
     w = weights([N*N*F, 1])
-    y = tf.tanh(tf.matmul(x, w) + b)
+    y = tf.sigmoid(tf.matmul(x, w) + b)
     y = tf.reshape(y, [-1])
-    e = tf.losses.mean_squared_error(2 * labels - 1, y)
-    return ((y + 1)/2.0, e, tf.train.GradientDescentOptimizer(0.5).minimize(e))
+    e = tf.losses.mean_squared_error(labels, y)
+    return (y, e, tf.train.GradientDescentOptimizer(learning_rate).minimize(e))
 
 # the next simplest network: weighted sum + a hidden layer with 2 values
 # highest observed accuracy: 0.65
@@ -207,7 +214,7 @@ def make_dcnn_agz(n_resblocks = 1, n_filters = 64, n_output = 64):
             with tf.control_dependencies([ema_apply_op]):
                 return batch_mean, batch_var
 
-        mean, var = tf.cond(phase_train,
+        mean, var = tf.cond(is_training,
             mean_var_with_update,
             lambda: (ema.average(batch_mean), ema.average(batch_var)))
 
@@ -314,13 +321,13 @@ def save_vars():
     with open(vars_file, 'w') as file:
         json.dump(data, file)
 
-learning_rate = tf.placeholder(tf.float32)
-(prediction, loss, optimizer) = make_dcnn_sc1()
+(prediction, loss, optimizer) = make_dcnn_fc1()
 
 avg_1 = tf.reduce_sum(labels * prediction) / tf.cast(tf.count_nonzero(labels), tf.float32)
 avg_0 = tf.reduce_sum((1 - labels) * prediction) / tf.cast(tf.count_nonzero(1 - labels), tf.float32)
 accuracy = tf.reduce_mean(tf.nn.relu(tf.sign((prediction - 0.5) * (labels - 0.5))))
 
+print('NN variables:')
 for x in tf.trainable_variables():
     print(x)
 
@@ -351,44 +358,43 @@ with tf.Session() as session:
     test_writer = tf.summary.FileWriter(lg_path + '/validation')
     main_writer = tf.summary.FileWriter(lg_path + '/training', session.graph)
 
-    lr = 0.5
-    lri = 0
-    EPOCH_LENGTH = 100
-    LR_DECAY = 1e6
+    lr = LR_INITIAL
+    lr_next_decay = LR_DECAY
+    step = 0 # the number of samples used for training
+
+    tprint('%6s %10s %10s %15s' % ('epoch', 'accuracy', 'save', 'tensorboard'))
 
     try:
-        for i in range(1000):
+        for epoch in range(NUM_EPOCHS):
             t0 = time.time()            
             save_vars()
 
             t1 = time.time()
             _labels, _images = session.run(next_batch_test)
             summary, _accuracy = session.run([merged, accuracy], feed_dict={
-                phase_train: False,
+                is_training: False,
                 learning_rate: lr,                    
                 labels: _labels,
                 images: _images })
-            test_writer.add_summary(summary, i * EPOCH_LENGTH * BATCH_SIZE)
+            test_writer.add_summary(summary, step)
 
             t2 = time.time()
-            tprint('[%d] accuracy = %.2f; save = %.1fs; tensorboard = %.1fs' % (i, _accuracy, t1 - t0, t2 - t1))
+            tprint('%6d %10.2f %10.1f %15.1f' % (epoch, _accuracy, t1 - t0, t2 - t1))
 
-            # adjust the DCNN weights on the main dataset
-            for k in range(EPOCH_LENGTH):
+            while time.time() < t2 + EPOCH_DURATION:
                 _labels, _images = session.run(next_batch_main)
                 summary, _ = session.run([merged, optimizer], feed_dict={
-                    phase_train: True,
+                    is_training: True,
                     learning_rate: lr,                    
                     labels: _labels,
                     images: _images })
-                main_writer.add_summary(summary, (i * EPOCH_LENGTH + k) * BATCH_SIZE)
+                step += BATCH_SIZE
+                main_writer.add_summary(summary, step)
 
-            # apply exp decay to the learning rate
-            lri += EPOCH_LENGTH * BATCH_SIZE
-            if lri > LR_DECAY:
-                lr *= 0.5
-                lri = 0
-                tprint('learning rate = %f' % (lr))
+            if step >= lr_next_decay:
+                lr *= LR_FACTOR
+                lr_next_decay += LR_DECAY
+                tprint('learning rate = %f' % lr)
                 
     except KeyboardInterrupt:
         tprint('Terminated by Ctrl+C')

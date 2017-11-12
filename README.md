@@ -7,9 +7,11 @@ for the single black stone:
 
 <img src="https://rawgit.com/d180cf/tsumego.js/master/docs/pics/13083.svg" height="200pt" title="goproblems.com/13083" />
 
-Currently, the best result is 86% accuracy on problems with
+Currently, the best result is 80% accuracy on problems with
 7 or more available moves. Note, that a random number generator
 would have 50% accuracy because there are only two outputs.
+
+![](tensorboard.png)
 
 # Features
 
@@ -52,15 +54,10 @@ which might seem a lot, but it turns out the the current JS V8 makes `~50 M/s` s
 can apply this convolution `100` times a second. This doesn't take into account the fact
 that in web it can use multiple threads (web workers) and GPU (weblas, keras.js, etc.).
 
-There is a [paper](http://www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf)
-that describes a `8x8->140->50->30->2` DCNN with accuracy 95%. This idea is implemented here:
+There are quite a few possible NN designs:
 
-1. `[11, 11, F]` input is convolved with a `[K, K, 1]` kernels for `K=1..5`
-1. The 5 outputs are merged into a `[415]` vector and with fully connected layers is mapped into `[150]`, `[80]`, `[20]` and `[2]` vectors.
-
-Its accuracy on tsumegos with size 7+ appears to be 80%.
-
-![](tensorboard.png)
+1. [All conv kernels mixed together](http://www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf)
+2. [AlphaGoZero-style NN: 40 residual blocks with batch norm](https://www.nature.com/articles/nature24270.epdf?author_access_token=VJXbVjaSHxFoctQQ4p2k4tRgN0jAjWel9jnR3ZoTv0PVW4gB86EEpGqTRDtpIz-2rmo8-KG06gqVobU5NSCFeHILHcVFUeMsbvwS-lxjqQGg98faovwjxeTUgZAUMnRQ)
 
 # How inputs to DCNN are generated
 

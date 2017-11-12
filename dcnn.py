@@ -110,7 +110,7 @@ phase_train = tf.placeholder(tf.bool)
 
 # perhaps the simplest NN possible: a weighthed sum of all features;
 # highest observed accuracy: 0.60
-def make_dcnn_fc():
+def make_dcnn_fc1():
     x = tf.reshape(images, [-1, N*N*F])
     b = bias([1])
     w = weights([N*N*F, 1])
@@ -139,8 +139,8 @@ def make_dcnn_fc2():
     return (y, e, tf.train.GradientDescentOptimizer(learning_rate).minimize(e))
 
 # applies 3x3 convolutions, then a dense layer, then readout
-# highest observed accuracy: 0.75
-def make_dcnn_sc1(n_conv = 3, n_filters = 16, n_output = 128):
+# highest observed accuracy: 0.80
+def make_dcnn_sc1(n_conv = 3, n_filters = 64, n_output = 64):
     def conv(x, k, n):
         b = bias([n])
         f = int(x.shape[3]) # [-1, 9, 9, 5]
@@ -162,20 +162,20 @@ def make_dcnn_sc1(n_conv = 3, n_filters = 16, n_output = 128):
         return tf.sigmoid(tf.matmul(x, w) + b)
 
     x = images
-    print(x.shape)
+    print(1, x.shape)
 
     # 3x3 convolutions with 16 filters
     for i in range(n_conv):
         x = conv(x, 3, n_filters)
-        print(x.shape)
+        print(2, x.shape)
 
     # dense layer
     x = dense(x, n_output)
-    print(x.shape)
+    print(3, x.shape)
 
     # readout
     y = readout(x)
-    print(y.shape)
+    print(4, y.shape)
 
     y = tf.reshape(y, [-1])    
     e = tf.losses.mean_squared_error(y, labels)
@@ -194,7 +194,7 @@ def make_dcnn_sc1(n_conv = 3, n_filters = 16, n_output = 128):
 # 5. A fully connected layer with 1 output, followed by tanh.
 #
 # Highest observed accuracy: 0.?? with N = ?, W = ?, M = ?
-def make_dcnn_agz(n_resblocks = 3, n_filters = 64, n_output = 64):
+def make_dcnn_agz(n_resblocks = 1, n_filters = 64, n_output = 64):
     def bnorm(x):
         n_out = int(x.shape[3])
         beta = tf.Variable(tf.constant(0.0, shape=[n_out]))
@@ -222,10 +222,10 @@ def make_dcnn_agz(n_resblocks = 3, n_filters = 64, n_output = 64):
     # a residual block with 2 convolutions [k, k, n]
     def resb(x, k, n):
         y = conv(x, 3, n_filters)
-        y = bnorm(y)
+        # y = bnorm(y)
         y = tf.nn.relu(y)
         y = conv(x, 3, n_filters)
-        y = bnorm(y)        
+        # y = bnorm(y)        
         y = tf.nn.relu(y + x)
         return y
 
@@ -244,33 +244,40 @@ def make_dcnn_agz(n_resblocks = 3, n_filters = 64, n_output = 64):
         return tf.matmul(x, w)
 
     x = images
+    print(1, x.shape)
 
     # the first conv layer that shirnks the input
     x = conv(x, 3, n_filters)
-    x = bnorm(x)
+    # x = bnorm(x)
     x = tf.nn.relu(x)
+    print(2, x.shape)
 
     # a few residual blocks
     for i in range(n_resblocks):
         x = resb(x, 3, n_filters)
+        print(3, x.shape)
 
     # the final 1x1:1 convolution
     x = conv(x, 1, 1)
-    x = bnorm(x)
+    # x = bnorm(x)
     x = tf.nn.relu(x)
+    print(4, x.shape)
 
     # the fully connected layer with a few outputs
     x = conn(x, n_output)
     x = tf.nn.relu(x)
+    print(5, x.shape)
 
     # the fully connected layer with 1 output
     x = readout(x)
     x = tf.tanh(x)
+    print(6, x.shape)
 
     # y is in -1..1 range, labels are in 0..1 range
     y = tf.reshape(x, [-1])
-    e = tf.losses.mean_squared_error(y, 2*labels - 1)
-    return (0.5*y + 0.5, tf.train.GradientDescentOptimizer(0.01).minimize(e))
+    y = (y + 1)/2
+    e = tf.losses.mean_squared_error(y, labels)
+    return (y, e, tf.train.GradientDescentOptimizer(learning_rate).minimize(e))
 
 # www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf
 # highest observed accuracy: 0.82
@@ -347,7 +354,7 @@ with tf.Session() as session:
     lr = 0.5
     lri = 0
     EPOCH_LENGTH = 100
-    LR_DECAY = 512000
+    LR_DECAY = 1e6
 
     try:
         for i in range(1000):

@@ -105,18 +105,13 @@ def bias(shape):
     initial = tf.constant(0.1, shape=shape)
     return tf.Variable(initial)
 
-def conv2d(x, W):
-    return tf.nn.conv2d(x, W,
-        strides=[1, 1, 1, 1],
-        padding='VALID')
-
 images = tf.placeholder(tf.float32, shape=[None, N, N, F])
 labels = tf.placeholder(tf.float32, shape=[None])
 is_training = tf.placeholder(tf.bool)
 learning_rate = tf.placeholder(tf.float32)
 
 # perhaps the simplest NN possible: a weighthed sum of all features;
-# highest observed accuracy: 0.60
+# highest observed accuracy: 0.65
 def make_dcnn_fc1():
     x = tf.reshape(images, [-1, N*N*F])
     b = bias([1])
@@ -313,7 +308,7 @@ def make_dcnn_1():
     e = tf.losses.mean_squared_error(labels, output)
     return (output, e, tf.train.AdamOptimizer(1e-4).minimize(e))
 
-def save_vars():
+def save_model():
     data = []
     for x in tf.trainable_variables():
         y = x.eval().reshape([-1])
@@ -321,11 +316,18 @@ def save_vars():
     with open(vars_file, 'w') as file:
         json.dump(data, file)
 
+def correlation(x, y):
+    xm, xv = tf.nn.moments(x, [0])
+    ym, yv = tf.nn.moments(y, [0])
+    xym, xyv = tf.nn.moments((x - xm)*(y - ym), [0])
+    return xym / tf.sqrt(xv * yv)
+
 (prediction, loss, optimizer) = make_dcnn_fc1()
 
 avg_1 = tf.reduce_sum(labels * prediction) / tf.cast(tf.count_nonzero(labels), tf.float32)
 avg_0 = tf.reduce_sum((1 - labels) * prediction) / tf.cast(tf.count_nonzero(1 - labels), tf.float32)
 accuracy = tf.reduce_mean(tf.nn.relu(tf.sign((prediction - 0.5) * (labels - 0.5))))
+corr = correlation(prediction, labels)
 
 print('NN variables:')
 for x in tf.trainable_variables():
@@ -343,11 +345,12 @@ with tf.Session() as session:
     tprint('Initializing global variables...')
     session.run(tf.global_variables_initializer())    
 
-    tf.summary.scalar('loss', loss)
-    tf.summary.scalar('accuracy', accuracy)
-    tf.summary.scalar('learning_rate', learning_rate)
-    tf.summary.scalar('avg_1', avg_1)
-    tf.summary.scalar('avg_0', avg_0)
+    tf.summary.scalar('0_accuracy', accuracy)
+    tf.summary.scalar('0_loss', loss)
+    tf.summary.scalar('0_correlation', corr)
+    tf.summary.scalar('1_avg_0', avg_0)
+    tf.summary.scalar('1_avg_1', avg_1)
+    tf.summary.scalar('2_learning_rate', learning_rate)
     merged = tf.summary.merge_all()
 
     n_tb_logs = len(os.listdir(logs_path)) if os.path.isdir(logs_path) else 0
@@ -362,16 +365,16 @@ with tf.Session() as session:
     lr_next_decay = LR_DECAY
     step = 0 # the number of samples used for training
 
-    tprint('%6s %10s %10s %15s' % ('epoch', 'accuracy', 'save', 'tensorboard'))
+    tprint('%6s %5s %5s %5s %5s' % ('epoch', 'acc', 'corr', 'save', 'tb'))
 
     try:
         for epoch in range(NUM_EPOCHS):
             t0 = time.time()            
-            save_vars()
+            save_model()
 
             t1 = time.time()
             _labels, _images = session.run(next_batch_test)
-            summary, _accuracy = session.run([merged, accuracy], feed_dict={
+            summary, _accuracy, _corr = session.run([merged, accuracy, corr], feed_dict={
                 is_training: False,
                 learning_rate: lr,                    
                 labels: _labels,
@@ -379,7 +382,7 @@ with tf.Session() as session:
             test_writer.add_summary(summary, step)
 
             t2 = time.time()
-            tprint('%6d %10.2f %10.1f %15.1f' % (epoch, _accuracy, t1 - t0, t2 - t1))
+            tprint('%6d %5.2f %5.2f %5.1f %5.1f' % (epoch, _accuracy, _corr, t1 - t0, t2 - t1))
 
             while time.time() < t2 + EPOCH_DURATION:
                 _labels, _images = session.run(next_batch_main)

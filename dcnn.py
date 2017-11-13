@@ -135,16 +135,18 @@ def fconn(x, n, name=None):
 
 # perhaps the simplest NN possible: a weighthed sum of all features
 # maximum observed accuracy:
-#   0.?? when d=0
+#   0.70 when d=0 n=16
 #   0.80 when d=1 n=16
-#   0.?? when d=1 n=64
-#   0.?? when d=2 n=16
-def make_dcnn_fc1(d = 0, n = 16):
+#   0.84 when d=1 n=64
+#   0.85 when d=1 n=128
+#   0.80 when d=2 n=16
+#   0.86 when d=2 n=64
+def make_dcnn_fc1(d = 2, n = 64):
     x = tf.reshape(images, [-1, N*N*F])
     print(1, x.shape)
 
     for i in range(d):
-        x = fconn(x, n, name = 'internal-%d' % d)
+        x = fconn(x, n, name = 'internal')
         x = tf.nn.relu(x)
         print(2, x.shape)
 

@@ -134,9 +134,9 @@ function reconstructDCNN(json) {
 
         let x = data;
 
-        for (let i = 1; ; i++) {
-            const w = json.vars[`internal-${i}/weights:0`];
-            const b = json.vars[`internal-${i}/bias:0`];
+        for (let i = 0; ; i++) {
+            const w = json.vars['internal/weights:' + i];
+            const b = json.vars['internal/bias:' + i];
 
             if (!w || !b) break;
 

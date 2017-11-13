@@ -81,8 +81,9 @@ def parse(example):
     ty = t[1]
 
     # `image` = 11 x 11 slice around [tx, ty] from `planes`, padded with 0s
+    # note, that the output format of features.js is [y, x, f]
     image = tf.pad(planes, [[N//2, N//2], [N//2, N//2], [0, 0]])
-    image = image[tx : tx + N, ty : ty + N, :]
+    image = image[ty : ty + N, tx : tx + N, :]
     
     # tranpose randomly
     transpose = tf.random_uniform([1], 0, 2, tf.int32)[0]
@@ -134,14 +135,11 @@ def fconn(x, n, name=None):
 
 # perhaps the simplest NN possible: a weighthed sum of all features
 # maximum observed accuracy:
-#   0.65 when d=0 
-#   0.72 when d=1 n=16
-#   0.76 when d=1 n=32
-#   0.67 when d=1 n=64
-#   0.75 when d=1 n=256
-#   0.75 when d=2 n=64
-#   0.78 when d=4 n=64
-def make_dcnn_fc1(d = 1, n = 16):
+#   0.?? when d=0
+#   0.80 when d=1 n=16
+#   0.?? when d=1 n=64
+#   0.?? when d=2 n=16
+def make_dcnn_fc1(d = 0, n = 16):
     x = tf.reshape(images, [-1, N*N*F])
     print(1, x.shape)
 

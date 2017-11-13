@@ -31,6 +31,6 @@
     "read-tfrs": "python read-tfrs.py .bin/test.tfrecords 9",
 
     "tensorboard": "start tensorboard --logdir=.bin/tf-logs",
-    "dcnn": "py dcnn.py .bin/main.tfrecords .bin/test.tfrecords 11 5 .bin/tf-model.json .bin/tf-logs"
+    "dcnn": "py dcnn.py .bin/main.tfrecords .bin/test.tfrecords 11 5 .bin/tf-models .bin/tf-logs"
   }
 }

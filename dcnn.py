@@ -9,17 +9,20 @@ import tensorflow as tf
 
 print('Python %s' % (sys.version))
 print('TensorFlow %s' % (tf.__version__))
+print('sys.argv', sys.argv)
 
 ds_main = sys.argv[1] # .tfrecords file with the main dataset
 ds_test = sys.argv[2] # .tfrecords file with the test dataset
 N = int(sys.argv[3]) # board frame size, e.g. 11 x 11
 F = int(sys.argv[4]) # the number of features features, e.g. 5
-vars_file = sys.argv[5] # the checkpoint file for weights
+models_dir = sys.argv[5] # the checkpoint file for weights
 logs_path = sys.argv[6] # tensorboard logs
+model_name = sys.argv[7] or 'test' # for tensorboard
+duration = float(sys.argv[8]) or 1.0 # hours
 
 SHUFFLE_WINDOW = 8192
 BATCH_SIZE = 256
-EPOCH_DURATION = 10.0 # seconds
+EPOCH_DURATION = 30.0 # seconds
 NUM_EPOCHS = 1000
 LR_INITIAL = 0.5
 LR_FACTOR = 0.5
@@ -28,8 +31,13 @@ LR_DECAY = 1e6
 print('Target frame: %dx%d' % (N, N))
 print('Features: %d' % (F))
 
+model_file = models_dir + '/' + model_name + '.json'
+os.makedirs(models_dir, exist_ok=True)
+print('Model file: ' + model_file)
+
 T = time.time()
 print('T = ' + datetime.datetime.now().isoformat())
+print('Training ends in %.1f hours' % duration)
 
 def tprint(text):
     dt = time.time() - T
@@ -97,6 +105,11 @@ dataset_main = make_dataset(ds_main)
 tprint('Initializing the test dataset...')    
 dataset_test = make_dataset(ds_test)
 
+images = tf.placeholder(tf.float32, shape=[None, N, N, F])
+labels = tf.placeholder(tf.float32, shape=[None])
+is_training = tf.placeholder(tf.bool)
+learning_rate = tf.placeholder(tf.float32)
+
 def weights(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
     return tf.Variable(initial)
@@ -105,19 +118,33 @@ def bias(shape):
     initial = tf.constant(0.1, shape=shape)
     return tf.Variable(initial)
 
-images = tf.placeholder(tf.float32, shape=[None, N, N, F])
-labels = tf.placeholder(tf.float32, shape=[None])
-is_training = tf.placeholder(tf.bool)
-learning_rate = tf.placeholder(tf.float32)
+# a fully connected layer with n outputs
+def fconn(x, n):
+    m = int(x.shape[1])
+    w = weights([m, n])
+    b = bias([n])
+    return tf.matmul(x, w) + b
 
-# perhaps the simplest NN possible: a weighthed sum of all features;
-# highest observed accuracy: 0.65
-def make_dcnn_fc1():
+# perhaps the simplest NN possible: a weighthed sum of all features
+#   accuracy=0.65 d=0 
+#   accuracy=0.67 d=1 n=64
+#   accuracy=0.75 d=1 n=256
+#   accuracy=0.75 d=2 n=64
+#   accuracy=0.xx d=4 n=64
+def make_dcnn_fc1(d = 4, n = 64):
     x = tf.reshape(images, [-1, N*N*F])
-    b = bias([1])
-    w = weights([N*N*F, 1])
-    y = tf.sigmoid(tf.matmul(x, w) + b)
-    y = tf.reshape(y, [-1])
+    print(1, x.shape)
+
+    for i in range(d):
+        x = fconn(x, n)
+        x = tf.nn.relu(x)
+        print(2, x.shape)
+
+    x = fconn(x, 1)    
+    x = tf.sigmoid(x)
+    print(3, x.shape)
+
+    y = tf.reshape(x, [-1])
     e = tf.losses.mean_squared_error(labels, y)
     return (y, e, tf.train.GradientDescentOptimizer(learning_rate).minimize(e))
 
@@ -312,8 +339,8 @@ def save_model():
     data = []
     for x in tf.trainable_variables():
         y = x.eval().reshape([-1])
-        data.append([x.name, x.shape.as_list(), y.tolist()])
-    with open(vars_file, 'w') as file:
+        data.append([x.name, x.shape.as_list(), y.tolist()])    
+    with open(model_file, 'w') as file:
         json.dump(data, file)
 
 def correlation(x, y):
@@ -322,6 +349,7 @@ def correlation(x, y):
     xym, xyv = tf.nn.moments((x - xm)*(y - ym), [0])
     return xym / tf.sqrt(xv * yv)
 
+print('Constructing DCNN...')
 (prediction, loss, optimizer) = make_dcnn_fc1()
 
 avg_1 = tf.reduce_sum(labels * prediction) / tf.cast(tf.count_nonzero(labels), tf.float32)
@@ -329,9 +357,9 @@ avg_0 = tf.reduce_sum((1 - labels) * prediction) / tf.cast(tf.count_nonzero(1 - 
 accuracy = tf.reduce_mean(tf.nn.relu(tf.sign((prediction - 0.5) * (labels - 0.5))))
 corr = correlation(prediction, labels)
 
-print('NN variables:')
-for x in tf.trainable_variables():
-    print(x)
+print('DCNN variables:')
+for v in tf.trainable_variables():
+    print(v)
 
 with tf.Session() as session:
     iterator_main = dataset_main.make_initializable_iterator()
@@ -345,17 +373,15 @@ with tf.Session() as session:
     tprint('Initializing global variables...')
     session.run(tf.global_variables_initializer())    
 
-    tf.summary.scalar('0_accuracy', accuracy)
-    tf.summary.scalar('0_loss', loss)
-    tf.summary.scalar('0_correlation', corr)
-    tf.summary.scalar('1_avg_0', avg_0)
-    tf.summary.scalar('1_avg_1', avg_1)
-    tf.summary.scalar('2_learning_rate', learning_rate)
+    tf.summary.scalar('A_accuracy', accuracy)
+    tf.summary.scalar('A_loss', loss)
+    tf.summary.scalar('A_correlation', corr)
+    tf.summary.scalar('B_avg_0', avg_0)
+    tf.summary.scalar('B_avg_1', avg_1)
+    tf.summary.scalar('C_learning_rate', learning_rate)
     merged = tf.summary.merge_all()
 
-    n_tb_logs = len(os.listdir(logs_path)) if os.path.isdir(logs_path) else 0
-    lg_path = '%s/%d' % (logs_path, n_tb_logs + 1)
-
+    lg_path = '%s/%s' % (logs_path, model_name)
     tprint('TensorBoard logs: ' + lg_path)
 
     test_writer = tf.summary.FileWriter(lg_path + '/validation')
@@ -365,11 +391,11 @@ with tf.Session() as session:
     lr_next_decay = LR_DECAY
     step = 0 # the number of samples used for training
 
-    tprint('%6s %5s %5s %5s %5s' % ('epoch', 'acc', 'corr', 'save', 'tb'))
+    tprint('%5s %5s %5s %5s' % ('acc', 'corr', 'save', 'tb'))
 
     try:
-        for epoch in range(NUM_EPOCHS):
-            t0 = time.time()            
+        while time.time() < T + duration * 3600:
+            t0 = time.time()
             save_model()
 
             t1 = time.time()
@@ -382,7 +408,7 @@ with tf.Session() as session:
             test_writer.add_summary(summary, step)
 
             t2 = time.time()
-            tprint('%6d %5.2f %5.2f %5.1f %5.1f' % (epoch, _accuracy, _corr, t1 - t0, t2 - t1))
+            tprint('%5.2f %5.2f %5.1f %5.1f' % (_accuracy, _corr, t1 - t0, t2 - t1))
 
             while time.time() < t2 + EPOCH_DURATION:
                 _labels, _images = session.run(next_batch_main)

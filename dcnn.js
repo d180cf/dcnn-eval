@@ -26,18 +26,19 @@ const [, , dcnnFile, inputFiles] = process.argv;
 
 const WINDOW_SIZE = 11; // 11x11, must match the DCNN
 const WINDOW_HALF = WINDOW_SIZE / 2 | 0;
-const STEP_DURATION = 1.0; // seconds
+const STEP_DURATION = 5.0; // seconds
 
 console.log(`Reconstructing DCNN from ${dcnnFile}`);
 const evalDCNN = reconstructDCNN(JSON.parse(fstext.read(dcnnFile)))
 
 console.log(`Reading SGF files from ${inputFiles}`);
+const paths = glob.sync(inputFiles);
 const accuracy = []; // accuracy[asize] = [average, count]
 
 let t = Date.now(), t0 = t;
 let total = 0;
 
-for (const path of glob.sync(inputFiles)) {
+for (const path of paths) {
     const text = fstext.read(path);
 
     const asize = +(/\bAS\[(\d+)\]/.exec(text) || [])[1] || 0;
@@ -65,14 +66,14 @@ for (const path of glob.sync(inputFiles)) {
 
     if (Date.now() > t + STEP_DURATION * 1000) {
         t = Date.now();
-        console.log(`${total} files processed, ${(total / (t - t0)).toFixed(1)} K/s`);
+        console.log(`${(total / paths.length).toFixed(2)} files processed, ${(total / (t - t0)).toFixed(1)} K/s`);
     }
 }
 
 console.log('Accuracy by area size:');
 for (let asize = 0; asize < accuracy.length; asize++) {
     const [average, n] = accuracy[asize] || [0, 0];
-    console.log(format('{0:2} {1:4} {2:4}', asize, average.toFixed(2), n));
+    n && console.log(format('{0:2} {1:4} {2:4}', asize, average.toFixed(2), n));
 }
 
 function flatten(x) {

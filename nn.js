@@ -18,7 +18,14 @@ exports.mul = function mul(x, w) {
 
     const y = tensor(m);
 
-    // for (...)
+     for (let i = 0; i < m; i++) {
+         let s = 0;
+
+         for (let j = 0; j < n; j++)
+            s += x[j] * w[j * m + i];
+
+        y[i] = s;
+     }
 
     return y;
 };

@@ -7,9 +7,11 @@ for the single black stone:
 
 <img src="https://rawgit.com/d180cf/tsumego.js/master/docs/pics/13083.svg" height="200pt" title="goproblems.com/13083" />
 
-Currently, the best result is 86% accuracy on problems with
-7 or more available moves. Note, that a random number generator
-would have 50% accuracy because there are only two outputs.
+Currently, the best result is 91% accuracy on problems with
+7 or more available moves. This is achieved with a stack of
+3 residual blocks with 64 outputs each. Note, that a random
+number generator would have 50% accuracy because there are
+only two outputs.
 
 ![](tensorboard.png)
 

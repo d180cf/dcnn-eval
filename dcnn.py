@@ -133,6 +133,15 @@ def fconn(x, n, name=None):
         b = bias([n])
         return tf.matmul(x, w) + b
 
+# a residual block: two fully connected layers + a skip connection
+def resb(x, n, name=None):
+    with tf.name_scope(name):        
+        y = tf.identity(x)
+        x = fconn(x, n, name='conn1')
+        x = tf.nn.relu(x)
+        x = fconn(x, n, name='conn2')
+        return tf.nn.relu(x + y)
+
 # perhaps the simplest NN possible: a weighthed sum of all features
 # maximum observed accuracy:
 #   0.70 when d=0 n=16
@@ -146,11 +155,11 @@ def make_dcnn_fc1(d = 2, n = 64):
     print(1, x.shape)
 
     for i in range(d):
-        x = fconn(x, n, name = 'internal')
+        x = fconn(x, n, name='internal')
         x = tf.nn.relu(x)
         print(2, x.shape)
 
-    x = fconn(x, 1, name = 'readout')
+    x = fconn(x, 1, name='readout')
     x = tf.sigmoid(x)
     print(3, x.shape)
 
@@ -158,22 +167,24 @@ def make_dcnn_fc1(d = 2, n = 64):
     e = tf.losses.mean_squared_error(labels, y)
     return (y, e, tf.train.GradientDescentOptimizer(learning_rate).minimize(e))
 
-# the next simplest network: weighted sum + a hidden layer with 2 values
-# highest observed accuracy: 0.65
-def make_dcnn_fc2():
+# a few residual blocks followed by a fully connected layer
+def make_dcnn_rb1(d = 3, n = 64):
     x = tf.reshape(images, [-1, N*N*F])
-    b = bias([2])
-    w = weights([N*N*F, 2])
-    y = tf.matmul(x, w) + b
-    y = tf.tanh(y)
+    print(1, x.shape)
 
-    b = bias([1])
-    w = weights([2, 1])
-    y = tf.matmul(y, w) + b
-    y = tf.tanh(y)
+    x = fconn(x, n, name='internal')
+    x = tf.nn.relu(x)
+    print(2, x.shape)
 
-    y = tf.reshape(y, [-1])
-    y = (y + 1)/2
+    for i in range(d):
+        x = resb(x, n, name='residual')
+        print(3, x.shape)
+
+    x = fconn(x, 1, name='readout')
+    x = tf.sigmoid(x)
+    print(4, x.shape)
+
+    y = tf.reshape(x, [-1])
     e = tf.losses.mean_squared_error(labels, y)
     return (y, e, tf.train.GradientDescentOptimizer(learning_rate).minimize(e))
 
@@ -373,7 +384,7 @@ def correlation(x, y):
     return xym / tf.sqrt(xv * yv)
 
 print('Constructing DCNN...')
-(prediction, loss, optimizer) = make_dcnn_fc1()
+(prediction, loss, optimizer) = make_dcnn_rb1()
 
 avg_1 = tf.reduce_sum(labels * prediction) / tf.cast(tf.count_nonzero(labels), tf.float32)
 avg_0 = tf.reduce_sum((1 - labels) * prediction) / tf.cast(tf.count_nonzero(1 - labels), tf.float32)

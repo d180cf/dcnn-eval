@@ -11,14 +11,20 @@ print('Python %s' % (sys.version))
 print('TensorFlow %s' % (tf.__version__))
 print('sys.argv', sys.argv)
 
-ds_main = sys.argv[1] # .tfrecords file with the main dataset
-ds_test = sys.argv[2] # .tfrecords file with the test dataset
-N = int(sys.argv[3]) # board frame size, e.g. 11 x 11
-F = int(sys.argv[4]) # the number of features features, e.g. 5
-models_dir = sys.argv[5] # the checkpoint file for weights
-logs_path = sys.argv[6] # tensorboard logs
-model_name = sys.argv[7] or 'test' # for tensorboard
-duration = float(sys.argv[8]) or 1.0 # hours
+def sysarg(i):
+    try:
+        return sys.argv[i]
+    except:
+        return None
+
+ds_main = sysarg(1) # .tfrecords file with the main dataset
+ds_test = sysarg(2) # .tfrecords file with the test dataset
+N = int(sysarg(3)) # board frame size, e.g. 11 x 11
+F = int(sysarg(4)) # the number of features features, e.g. 5
+models_dir = sysarg(5) # the checkpoint file for weights
+logs_path = sysarg(6) # tensorboard logs
+model_name = sysarg(7) or 'test' # for tensorboard
+duration = float(sysarg(8) or 1.0) # hours
 
 SHUFFLE_WINDOW = 8192
 BATCH_SIZE = 256
@@ -112,35 +118,39 @@ learning_rate = tf.placeholder(tf.float32)
 
 def weights(shape):
     initial = tf.truncated_normal(shape, stddev=0.1)
-    return tf.Variable(initial)
+    return tf.Variable(initial, name='weights')
 
 def bias(shape):
     initial = tf.constant(0.1, shape=shape)
-    return tf.Variable(initial)
+    return tf.Variable(initial, name='bias')
 
 # a fully connected layer with n outputs
-def fconn(x, n):
-    m = int(x.shape[1])
-    w = weights([m, n])
-    b = bias([n])
-    return tf.matmul(x, w) + b
+def fconn(x, n, name=None):
+    with tf.name_scope(name):
+        m = int(x.shape[1])
+        w = weights([m, n])
+        b = bias([n])
+        return tf.matmul(x, w) + b
 
 # perhaps the simplest NN possible: a weighthed sum of all features
-#   accuracy=0.65 d=0 
-#   accuracy=0.67 d=1 n=64
-#   accuracy=0.75 d=1 n=256
-#   accuracy=0.75 d=2 n=64
-#   accuracy=0.xx d=4 n=64
-def make_dcnn_fc1(d = 4, n = 64):
+# maximum observed accuracy:
+#   0.65 when d=0 
+#   0.72 when d=1 n=16
+#   0.76 when d=1 n=32
+#   0.67 when d=1 n=64
+#   0.75 when d=1 n=256
+#   0.75 when d=2 n=64
+#   0.78 when d=4 n=64
+def make_dcnn_fc1(d = 1, n = 16):
     x = tf.reshape(images, [-1, N*N*F])
     print(1, x.shape)
 
     for i in range(d):
-        x = fconn(x, n)
+        x = fconn(x, n, name = 'internal-%d' % d)
         x = tf.nn.relu(x)
         print(2, x.shape)
 
-    x = fconn(x, 1)    
+    x = fconn(x, 1, name = 'readout')
     x = tf.sigmoid(x)
     print(3, x.shape)
 
@@ -335,13 +345,26 @@ def make_dcnn_1():
     e = tf.losses.mean_squared_error(labels, output)
     return (output, e, tf.train.AdamOptimizer(1e-4).minimize(e))
 
-def save_model():
-    data = []
-    for x in tf.trainable_variables():
-        y = x.eval().reshape([-1])
-        data.append([x.name, x.shape.as_list(), y.tolist()])    
-    with open(model_file, 'w') as file:
-        json.dump(data, file)
+# TF must have a better way to save the model, but I haven't figured it out.
+def save_model(file_path):
+    vars = {}
+
+    for v in tf.trainable_variables():
+        data = v.eval().reshape([-1]).tolist()
+
+        vars[v.name] = {
+            'shape': v.shape.as_list(),
+            'min': np.amin(data),
+            'max': np.amax(data),
+            'mean': np.mean(data),
+            'std': np.std(data),
+            'data': data }    
+
+    with open(file_path, 'w') as file:
+        json.dump({
+            'vars': vars,
+            'ops': {}
+        }, file)
 
 def correlation(x, y):
     xm, xv = tf.nn.moments(x, [0])
@@ -396,7 +419,7 @@ with tf.Session() as session:
     try:
         while time.time() < T + duration * 3600:
             t0 = time.time()
-            save_model()
+            save_model(model_file)
 
             t1 = time.time()
             _labels, _images = session.run(next_batch_test)

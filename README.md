@@ -13,7 +13,14 @@ Currently, the best result is 91% accuracy on problems with
 number generator would have 50% accuracy because there are
 only two outputs.
 
-![](tensorboard.png)
+![](assets/tensorboard.png)
+
+It's interesting that this result was achieved with a fixed
+learning rate `0.5`. When a decay was applied - that halves the
+learning rate every `1M` samples - the final accuracy was only
+85%.
+
+![](assets/resnet-decay.png)
 
 # Features
 

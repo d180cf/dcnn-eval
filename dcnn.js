@@ -146,6 +146,8 @@ function reconstructDCNN(json) {
         for (let i = 0; i < data.length; i++)
             input[i] = data[i];
 
-        return x.eval()[0];
+        x.eval();
+
+        return x.value[0];
     };
 }

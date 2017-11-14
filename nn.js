@@ -2,11 +2,32 @@ function operation(shape, deps, eval) {
     const size = shape.reduce((p, n) => p * n, 1);
     const value = new Float32Array(size);
     const op = {};
-    op.eval = () => (eval(value, deps.map(x => x.eval())), value);
+    op.eval = () => {
+        for (const dep of deps)
+            dep.eval();
+        eval(value, deps.map(dep => dep.value));
+        //console.log(moments(value));
+    };
     op.value = value;
     op.shape = shape;
     op.size = size;
     return op;
+}
+
+function moments(a) {
+    let n = a.length;
+    let s = 0;
+
+    for (let i = 0; i < n; i++)
+        s += a[i];
+
+    let m = s / n;
+    let v = 0;
+
+    for (let i = 0; i < n; i++)
+        v += (a[i] - m) * (a[i] - m);
+
+    return [m, Math.sqrt(v / n)];
 }
 
 const nn = {};

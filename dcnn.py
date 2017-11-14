@@ -30,9 +30,9 @@ SHUFFLE_WINDOW = 8192
 BATCH_SIZE = 256
 EPOCH_DURATION = 30.0 # seconds
 NUM_EPOCHS = 1000
-LR_INITIAL = 0.5
+LR_INITIAL = 1.0
 LR_FACTOR = 0.5
-LR_DECAY = 1e6
+LR_DECAY = 20e6
 
 print('Target frame: %dx%d' % (N, N))
 print('Features: %d' % (F))
@@ -388,7 +388,7 @@ print('Constructing DCNN...')
 
 avg_1 = tf.reduce_sum(labels * prediction) / tf.cast(tf.count_nonzero(labels), tf.float32)
 avg_0 = tf.reduce_sum((1 - labels) * prediction) / tf.cast(tf.count_nonzero(1 - labels), tf.float32)
-accuracy = tf.reduce_mean(tf.nn.relu(tf.sign((prediction - 0.5) * (labels - 0.5))))
+error = 1 - tf.reduce_mean(tf.nn.relu(tf.sign((prediction - 0.5) * (labels - 0.5))))
 corr = correlation(prediction, labels)
 
 print('DCNN variables:')
@@ -407,7 +407,7 @@ with tf.Session() as session:
     tprint('Initializing global variables...')
     session.run(tf.global_variables_initializer())    
 
-    tf.summary.scalar('A_accuracy', accuracy)
+    tf.summary.scalar('A_error', error)
     tf.summary.scalar('A_loss', loss)
     tf.summary.scalar('A_correlation', corr)
     tf.summary.scalar('B_avg_0', avg_0)
@@ -425,7 +425,7 @@ with tf.Session() as session:
     lr_next_decay = LR_DECAY
     step = 0 # the number of samples used for training
 
-    tprint('%5s %5s %5s %5s' % ('acc', 'corr', 'save', 'tb'))
+    tprint('%5s %5s %5s %5s' % ('err', 'corr', 'save', 'tb'))
 
     try:
         while time.time() < T + duration * 3600:
@@ -434,7 +434,7 @@ with tf.Session() as session:
 
             t1 = time.time()
             _labels, _images = session.run(next_batch_test)
-            summary, _accuracy, _corr = session.run([merged, accuracy, corr], feed_dict={
+            summary, _error, _corr = session.run([merged, error, corr], feed_dict={
                 is_training: False,
                 learning_rate: lr,                    
                 labels: _labels,
@@ -442,7 +442,7 @@ with tf.Session() as session:
             test_writer.add_summary(summary, step)
 
             t2 = time.time()
-            tprint('%5.2f %5.2f %5.1f %5.1f' % (_accuracy, _corr, t1 - t0, t2 - t1))
+            tprint('%5.2f %5.2f %5.1f %5.1f' % (_error, _corr, t1 - t0, t2 - t1))
 
             while time.time() < t2 + EPOCH_DURATION:
                 _labels, _images = session.run(next_batch_main)

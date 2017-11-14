@@ -9,7 +9,6 @@
  * Output:
  * 
  *      1. Probablity that the target group is safe.
- * 
  */
 
 const fs = require('fs');
@@ -20,7 +19,7 @@ const tsumego = require('tsumego.js');
 const nn = require('./nn');
 const fstext = require('./fstext');
 const format = require('./format');
-const { features } = require('./features');
+const { features, F_COUNT } = require('./features');
 
 const [, , dcnnFile, inputFiles] = process.argv;
 
@@ -38,6 +37,9 @@ const accuracy = []; // accuracy[asize] = [average, count]
 let t = Date.now(), t0 = t;
 let total = 0;
 
+const planes = new Float32Array(18 * 18 * F_COUNT); // enough for any board size
+const fslice = new Float32Array(WINDOW_SIZE * WINDOW_SIZE * F_COUNT); // no need to recreate it
+
 for (const path of paths) {
     const text = fstext.read(path);
 
@@ -48,12 +50,16 @@ for (const path of paths) {
     const board = solver.board;
     const target = solver.target;
     const [x, y] = tsumego.stone.coords(target);
-    const planes = features(board, { x, y });
-    const input = slice(planes,
-        [x - WINDOW_HALF, x + WINDOW_HALF],
-        [y - WINDOW_HALF, y + WINDOW_HALF]);
 
-    const prediction = evalDCNN(flatten(input));
+    features(planes, board, { x, y });
+
+    // (x + 1, y + 1) is to account for the wall
+    slice(fslice, planes, [board.size + 2, board.size + 2, F_COUNT],
+        [x + 1 - WINDOW_HALF, x + 1 + WINDOW_HALF],
+        [y + 1 - WINDOW_HALF, y + 1 + WINDOW_HALF],
+        [0, F_COUNT - 1]);
+
+    const prediction = evalDCNN(fslice);
     const iscorrect = (value - 0.5) * (prediction - 0.5) > 0;
 
     const [average, n] = accuracy[asize] || [0, 0];
@@ -76,45 +82,25 @@ for (let asize = 0; asize < accuracy.length; asize++) {
     n && console.log(format('{0:2} {1:4} {2:4}', asize, average.toFixed(2), n));
 }
 
-function flatten(x) {
-    while (x[0].length)
-        x = [].concat(...x);
-    return x;
+function offsetFn(x_size, y_size, z_size) {
+    return (x, y, z) => (x * y_size + y) * z_size + z;
 }
 
-function slice(input, [xmin, xmax], [ymin, ymax]) {
-    const [zmin, zmax] = [0, input[0][0].length - 1];
-    const output = [];
+function slice(res, src, [x_size, y_size, z_size], [xmin, xmax], [ymin, ymax], [zmin, zmax]) {
+    const ires = offsetFn(xmax - xmin + 1, ymax - ymin + 1, zmax - zmin + 1);
+    const isrc = offsetFn(x_size, y_size, z_size);
 
     for (let x = xmin; x <= xmax; x++) {
         for (let y = ymin; y <= ymax; y++) {
             for (let z = zmin; z <= zmax; z++) {
-                // this chunk of code simply does this:
-                //
-                //  output[x - xmin][y - ymin][z - zmin]
-                //      = input[x][y][z]
+                const ri = ires(x - xmin, y - ymin, z - zmin);
+                const si = isrc(x, y, z);
+                const outside = x < 0 || x >= x_size || y < 0 || y >= y_size || z < 0 || z >= z_size;
 
-                const _x = x - xmin;
-                const _y = y - ymin;
-                const _z = z - zmin;
-
-                let t = output;
-
-                t = t[_x] = t[_x] || [];
-                t = t[_y] = t[_y] || [];
-
-                let s = input;
-
-                s = s && s[x] || 0;
-                s = s && s[y] || 0;
-                s = s && s[z] || 0;
-
-                t[_z] = s;
+                res[ri] = outside ? 0 : src[si];
             }
         }
     }
-
-    return output;
 }
 
 /**
@@ -128,30 +114,38 @@ function slice(input, [xmin, xmax], [ymin, ymax]) {
  * @returns {(tensor: number[]) => number}
  */
 function reconstructDCNN(json) {
-    return data => {
-        if (data.length != WINDOW_SIZE * WINDOW_SIZE * 5)
-            throw Error('Invalid input size: ' + data.length);
+    const input = new Float32Array(WINDOW_SIZE * WINDOW_SIZE * F_COUNT);
 
-        let x = data;
+    let x = nn.value(input);
 
-        for (let i = 0; ; i++) {
-            const w = json.vars['internal/weights:' + i];
-            const b = json.vars['internal/bias:' + i];
+    for (let i = 0; ; i++) {
+        const w = json.vars['internal/weights:' + i];
+        const b = json.vars['internal/bias:' + i];
 
-            if (!w || !b) break;
-
-            x = nn.mul(x, w.data);
-            x = nn.add(x, b.data);
-            x = nn.relu(x);
-        }
-
-        const w = json.vars['readout/weights:0'];
-        const b = json.vars['readout/bias:0'];
+        if (!w || !b) break;
 
         x = nn.mul(x, w.data);
         x = nn.add(x, b.data);
-        x = nn.sigmoid(x);
+        x = nn.relu(x);
+    }
 
-        return x;
+    const w = json.vars['readout/weights:0'];
+    const b = json.vars['readout/bias:0'];
+
+    x = nn.mul(x, w.data);
+    x = nn.add(x, b.data);
+    x = nn.sigmoid(x);
+
+    if (x.size != 1)
+        throw Error('Invalid output shape: ' + x.shape);
+
+    return data => {
+        if (data.length != input.length)
+            throw Error('Invalid input size: ' + data.length);
+
+        for (let i = 0; i < data.length; i++)
+            input[i] = data[i];
+
+        return x.eval()[0];
     };
 }

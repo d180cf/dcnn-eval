@@ -8,7 +8,7 @@ const fspath = require('path');
 const tsumego = require('tsumego.js');
 
 const fstext = require('./fstext');
-const { features } = require('./features');
+const { features, F_COUNT } = require('./features');
 
 exports.compute = compute;
 
@@ -24,9 +24,10 @@ function compute(input, output) {
 
     const config = {
         safe: +(/\bTS\[(\d+)\]/.exec(sgf) || [])[1], // the label
-        size: board.size,
+        bsize: board.size,
         target: [...board.stones(tblock)].map(s => tsumego.stone.coords(s)),
-        area: +(/\bAS\[(\d+)\]/.exec(sgf) || [])[1],
+        asize: +(/\bAS\[(\d+)\]/.exec(sgf) || [])[1],
+        shape: [board.size + 2, board.size + 2, F_COUNT],
         features: feats
     };
 

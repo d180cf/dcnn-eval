@@ -7,20 +7,12 @@ for the single black stone:
 
 <img src="https://rawgit.com/d180cf/tsumego.js/master/docs/pics/13083.svg" height="200pt" title="goproblems.com/13083" />
 
-Currently, the best result is 91% accuracy on problems with
-7 or more available moves. This is achieved with a stack of
-3 residual blocks with 64 outputs each. Note, that a random
-number generator would have 50% accuracy because there are
-only two outputs.
+Currently, the best result is 94% accuracy. This is achieved
+with a stack of 3 residual blocks with 64 outputs each. Note,
+that a random number generator would have 50% accuracy because
+there are only two outputs.
 
 ![](assets/tensorboard.png)
-
-It's interesting that this result was achieved with a fixed
-learning rate `0.5`. When a decay was applied - that halves the
-learning rate every `1M` samples - the final accuracy was only
-85%.
-
-![](assets/resnet-decay.png)
 
 # Features
 

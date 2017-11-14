@@ -14,6 +14,10 @@ there are only two outputs.
 
 ![](assets/tensorboard.png)
 
+There is still room for improvement: this NN doesn't use convolutions,
+it doesn't use batch normalization, weight decay; the view is always
+centered at the target stone and only a few basic features are precomputed.
+
 # Features
 
 The input to the DCNN will be a list of planes with features

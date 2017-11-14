@@ -77,8 +77,9 @@ def parse(example):
 
     t = target[index]
 
-    tx = t[0]
-    ty = t[1]
+    # the feature planes include the board wall, hence (x + 1, y + 1)
+    tx = t[0] + 1
+    ty = t[1] + 1
 
     # `image` = 11 x 11 slice around [tx, ty] from `planes`, padded with 0s
     # note, that the output format of features.js is [y, x, f]
@@ -137,9 +138,9 @@ def fconn(x, n, name=None):
 def resb(x, n, name=None):
     with tf.name_scope(name):        
         y = tf.identity(x)
-        x = fconn(x, n, name='conn1')
+        x = fconn(x, n, name='conn-0')
         x = tf.nn.relu(x)
-        x = fconn(x, n, name='conn2')
+        x = fconn(x, n, name='conn-1')
         return tf.nn.relu(x + y)
 
 # perhaps the simplest NN possible: a weighthed sum of all features
@@ -177,7 +178,7 @@ def make_dcnn_rb1(d = 3, n = 64):
     print(2, x.shape)
 
     for i in range(d):
-        x = resb(x, n, name='residual')
+        x = resb(x, n, name='residual-'+str(i))
         print(3, x.shape)
 
     x = fconn(x, 1, name='readout')

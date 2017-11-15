@@ -1,66 +1,125 @@
-function tensor(n) {
-    return new Float32Array(n);
+function operation(shape, deps, eval, init) {
+    for (const x of shape)
+        if (x % 1)
+            throw Error('Invalid shape: [' + shape + ']');    
+
+    const size = shape.reduce((p, n) => p * n, 1);
+    const value = new Float32Array(size);
+    const op = {};    
+    op.eval = () => {
+        for (const dep of deps)
+            dep.eval();
+        eval(value, deps.map(dep => dep.value));
+        //console.log(moments(value));
+    };
+    op.set = init => {
+        if (init.length != size)
+            throw Error('Invalid initializer size: ' + init.length);
+        value.set(init);
+    };
+    op.value = value;
+    op.shape = shape;
+    op.size = size;
+    init && op.set(init);
+    return op;
 }
 
+function moments(a) {
+    let n = a.length;
+    let s = 0;
+
+    for (let i = 0; i < n; i++)
+        s += a[i];
+
+    let m = s / n;
+    let v = 0;
+
+    for (let i = 0; i < n; i++)
+        v += (a[i] - m) * (a[i] - m);
+
+    return [m, Math.sqrt(v / n)];
+}
+
+const nn = {};
+
 /**
- * Multiples a vector by a matrix.
- * 
- * @param x shape = [n, 1]
- * @param w shape = [n, m]
- * @returns shape = [m, 1]
+ * @param {number[]} shape
+ * @param {number[]} input optional array-like initial value
  */
-exports.mul = function mul(x, w) {
-    const n = x.length;
-    const m = w.length / n;
-
-    if (m % 1)
-        throw Error('Incompatible x and w shapes: ' + x.length + ' and ' + w.length);
-
-    const y = tensor(m);
-
-     for (let i = 0; i < m; i++) {
-         let s = 0;
-
-         for (let j = 0; j < n; j++)
-            s += x[j] * w[j * m + i];
-
-        y[i] = s;
-     }
-
-    return y;
+nn.value = function value(shape, input) {
+    return operation(shape, [], y => { }, input);
 };
 
-exports.add = function add(x, y) {
-    const n = x.length;
+/**
+ * Multiples a `[n]` vector by a `[n, m]` matrix: `y = x * w`
+ * 
+ * @param x shape = [n]
+ * @param w shape = [n, m]
+ * @returns shape = [m] - the result
+ */
+nn.mul = function mul(x, w) {
+    const [n] = x.shape;
 
-    if (n != y.length)
-        throw Error('Incompatible x and y shapes: ' + x.length + ' and ' + y.length);
+    if (w.length) // array-like
+        w = nn.value([n, w.length / n], w);
 
-    const z = tensor(n);
+    if (w.shape[0] != n)
+        throw Error('Incompatible x and w shapes: [' + x.shape + '] and [' + w.shape + ']');
 
-    for (let i = 0; i < n; i++)
-        z[i] = x[i] + y[i];
+    const [, m] = w.shape;
 
-    return z;
+    return operation([m], [x, w], (y, [x, w]) => {
+        for (let i = 0; i < m; i++) {
+            y[i] = 0;
+
+            for (let j = 0; j < n; j++)
+                y[i] += x[j] * w[j * m + i];
+        }
+    });
 };
 
-exports.relu = function relu(x) {
-    const n = x.length;
-    const y = tensor(n);
+/**
+ * Element-wise `z = x + y`.
+ */
+nn.add = function add(x, y) {
+    const n = x.size;
 
-    for (let i = 0; i < n; i++)
-        y[i] = Math.max(0, x[i]);
+    if (y.length) // array-like
+        y = nn.value(x.shape, y);
 
-    return y;
+    if (n != y.size)
+        throw Error('Incompatible x and y shapes: [' + x.shape + '] and [' + y.shape + ']');
+
+    return operation(x.shape, [x, y], (z, [x, y]) => {
+        for (let i = 0; i < n; i++)
+            z[i] = x[i] + y[i];
+    });
 };
 
-exports.sigmoid = function sigmoid(x) {
-    const n = x.length;
-    const y = tensor(n);
+/**
+ * Element-wise `y = f(x)`
+ */
+nn.map = function map(x, f) {
+    const n = x.size;
 
-    for (let i = 0; i < n; i++)
-        y[i] = 1 / (1 + Math.exp(-x[i]));
-
-    return y;
+    return operation(x.shape, [x], (y, [x]) => {
+        for (let i = 0; i < n; i++)
+            y[i] = f(x[i]);
+    });
 };
 
+/**
+ * Element-wise `y = max(0, x)`
+ */
+nn.relu = function relu(x) {
+    return nn.map(x, x => Math.max(0, x));
+};
+
+/**
+ * Element-wise `y = 1/(1 + exp(-x))`
+ */
+nn.sigmoid = function sigmoid(x) {
+    return nn.map(x, x => 1 / (1 + Math.exp(-x)));
+};
+
+module.exports = nn;

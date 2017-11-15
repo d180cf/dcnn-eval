@@ -32,6 +32,7 @@ const evalDCNN = reconstructDCNN(JSON.parse(fstext.read(dcnnFile)))
 
 console.log(`Reading SGF files from ${inputFiles}`);
 const paths = glob.sync(inputFiles);
+console.log(paths.length + ' files total');
 const accuracy = []; // accuracy[asize] = [average, count]
 
 let t = Date.now(), t0 = t;
@@ -43,24 +44,41 @@ const fslice = new Float32Array(WINDOW_SIZE * WINDOW_SIZE * F_COUNT); // no need
 for (const path of paths) {
     const text = fstext.read(path);
 
+    const bsize = +(/\bSZ\[(\d+)\]/.exec(text) || [])[1] || 0;
     const asize = +(/\bAS\[(\d+)\]/.exec(text) || [])[1] || 0;
     const value = +(/\bTS\[(\d+)\]/.exec(text) || [])[1] || 0;
+
+    //if (bsize == 9) continue;
+
+    //console.log(path);
+    //console.log(text);
 
     const solver = new tsumego.Solver(text);
     const board = solver.board;
     const target = solver.target;
     const [x, y] = tsumego.stone.coords(target);
 
+    //console.log('target', [x, y]);
+
+    planes.fill(0); // just in case
+
     features(planes, board, { x, y });
+
+    //print('planes', board.size + 2, F_COUNT, planes);
 
     // (x + 1, y + 1) is to account for the wall
     slice(fslice, planes, [board.size + 2, board.size + 2, F_COUNT],
-        [x + 1 - WINDOW_HALF, x + 1 + WINDOW_HALF],
         [y + 1 - WINDOW_HALF, y + 1 + WINDOW_HALF],
+        [x + 1 - WINDOW_HALF, x + 1 + WINDOW_HALF],
         [0, F_COUNT - 1]);
+
+    //print('fslice', WINDOW_SIZE, F_COUNT, fslice);
 
     const prediction = evalDCNN(fslice);
     const iscorrect = (value - 0.5) * (prediction - 0.5) > 0;
+
+    //console.log('prediction', prediction);
+    //console.log('status', value);
 
     const [average, n] = accuracy[asize] || [0, 0];
 
@@ -80,6 +98,21 @@ console.log('Accuracy by area size:');
 for (let asize = 0; asize < accuracy.length; asize++) {
     const [average, n] = accuracy[asize] || [0, 0];
     n && console.log(format('{0:2} {1:4} {2:4}', asize, average.toFixed(2), n));
+}
+
+function print(name, size, depth, data) {
+    console.log(name + ' = [ // ' + size + 'x' + size + 'x' + depth);
+    for (let d = 0; d < depth; d++) {
+        console.log('  [ // feature = ' + d);
+        for (let y = 0; y < size; y++) {
+            let s = '';
+            for (let x = 0; x < size; x++)
+                s += (data[y * size * depth + x * depth + d] ? '+' : '-') + ' ';
+            console.log('    ' + s.slice(0, -1));
+        }
+        console.log('  ],');
+    }
+    console.log(']');
 }
 
 function offsetFn(x_size, y_size, z_size) {
@@ -114,9 +147,9 @@ function slice(res, src, [x_size, y_size, z_size], [xmin, xmax], [ymin, ymax], [
  * @returns {(tensor: number[]) => number}
  */
 function reconstructDCNN(json) {
-    const input = new Float32Array(WINDOW_SIZE * WINDOW_SIZE * F_COUNT);
+    const input = nn.value([WINDOW_SIZE * WINDOW_SIZE * F_COUNT]);
 
-    let x = nn.value(input);
+    let x = input;
 
     for (let i = 0; ; i++) {
         const w = json.vars['internal/weights:' + i];
@@ -140,14 +173,8 @@ function reconstructDCNN(json) {
         throw Error('Invalid output shape: ' + x.shape);
 
     return data => {
-        if (data.length != input.length)
-            throw Error('Invalid input size: ' + data.length);
-
-        for (let i = 0; i < data.length; i++)
-            input[i] = data[i];
-
+        input.set(data);
         x.eval();
-
         return x.value[0];
     };
 }

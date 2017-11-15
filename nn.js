@@ -1,16 +1,26 @@
-function operation(shape, deps, eval) {
+function operation(shape, deps, eval, init) {
+    for (const x of shape)
+        if (x % 1)
+            throw Error('Invalid shape: [' + shape + ']');    
+
     const size = shape.reduce((p, n) => p * n, 1);
     const value = new Float32Array(size);
-    const op = {};
+    const op = {};    
     op.eval = () => {
         for (const dep of deps)
             dep.eval();
         eval(value, deps.map(dep => dep.value));
         //console.log(moments(value));
     };
+    op.set = init => {
+        if (init.length != size)
+            throw Error('Invalid initializer size: ' + init.length);
+        value.set(init);
+    };
     op.value = value;
     op.shape = shape;
     op.size = size;
+    init && op.set(init);
     return op;
 }
 
@@ -33,18 +43,11 @@ function moments(a) {
 const nn = {};
 
 /**
- * @param {number[]} array an array-like object
  * @param {number[]} shape
+ * @param {number[]} input optional array-like initial value
  */
-nn.value = function value(tensor, shape = [tensor.length]) {
-    for (const x of shape)
-        if (x % 1)
-            throw Error('Invalid shape: [' + shape + ']');
-
-    return operation(shape, [], y => {
-        for (let i = 0; i < y.length; y++)
-            y[i] = tensor[i];
-    });
+nn.value = function value(shape, input) {
+    return operation(shape, [], y => { }, input);
 };
 
 /**
@@ -58,7 +61,7 @@ nn.mul = function mul(x, w) {
     const [n] = x.shape;
 
     if (w.length) // array-like
-        w = nn.value(w, [n, w.length / n]);
+        w = nn.value([n, w.length / n], w);
 
     if (w.shape[0] != n)
         throw Error('Incompatible x and w shapes: [' + x.shape + '] and [' + w.shape + ']');
@@ -67,12 +70,10 @@ nn.mul = function mul(x, w) {
 
     return operation([m], [x, w], (y, [x, w]) => {
         for (let i = 0; i < m; i++) {
-            let s = 0;
+            y[i] = 0;
 
             for (let j = 0; j < n; j++)
-                s += x[j] * w[j * m + i];
-
-            y[i] = s;
+                y[i] += x[j] * w[j * m + i];
         }
     });
 };
@@ -84,7 +85,7 @@ nn.add = function add(x, y) {
     const n = x.size;
 
     if (y.length) // array-like
-        y = nn.value(y)
+        y = nn.value(x.shape, y);
 
     if (n != y.size)
         throw Error('Incompatible x and y shapes: [' + x.shape + '] and [' + y.shape + ']');

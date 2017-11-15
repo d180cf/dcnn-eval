@@ -113,16 +113,18 @@ Boards with too few available moves can be ignored as it's easier to run the usu
 
 ```
 Accuracy by area size:
-2  0.93 14
-3  0.67 335
-4  0.63 3332
-5  0.64 1767
-6  0.61 4272
-7  0.70 3438
-8  0.66 2145
-9  0.68 9004
-10 0.73 3157
-11 0.66 1021
-12 0.69 161
-13 0.72 61
+2  0.57 14
+3  0.72 335
+4  0.70 3332
+5  0.71 1767
+6  0.71 4272
+7  0.76 3438
+8  0.76 2145
+9  0.80 9004
+10 0.84 3157
+11 0.86 1021
+12 0.82 161
+13 0.93 61
 ```
+
+It's interesting that the accuracy is higher on harder problems.

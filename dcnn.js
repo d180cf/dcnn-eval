@@ -48,23 +48,14 @@ for (const path of paths) {
     const asize = +(/\bAS\[(\d+)\]/.exec(text) || [])[1] || 0;
     const value = +(/\bTS\[(\d+)\]/.exec(text) || [])[1] || 0;
 
-    //if (bsize == 9) continue;
-
-    //console.log(path);
-    //console.log(text);
-
     const solver = new tsumego.Solver(text);
     const board = solver.board;
     const target = solver.target;
     const [x, y] = tsumego.stone.coords(target);
 
-    //console.log('target', [x, y]);
-
     planes.fill(0); // just in case
 
     features(planes, board, { x, y });
-
-    //print('planes', board.size + 2, F_COUNT, planes);
 
     // (x + 1, y + 1) is to account for the wall
     slice(fslice, planes, [board.size + 2, board.size + 2, F_COUNT],
@@ -72,13 +63,8 @@ for (const path of paths) {
         [x + 1 - WINDOW_HALF, x + 1 + WINDOW_HALF],
         [0, F_COUNT - 1]);
 
-    //print('fslice', WINDOW_SIZE, F_COUNT, fslice);
-
     const prediction = evalDCNN(fslice);
     const iscorrect = (value - 0.5) * (prediction - 0.5) > 0;
-
-    //console.log('prediction', prediction);
-    //console.log('status', value);
 
     const [average, n] = accuracy[asize] || [0, 0];
 

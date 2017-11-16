@@ -11,27 +11,27 @@
     "@types/node": "8.0.46"
   },
   "scripts": {
-    "solve": "node solve node_modules/sgf-problems/gop/12354.sgf .bin/test/vars.sgf 20 7",
-    "vplay": "node vplay .bin/test/vars.sgf .bin/test/subp",    
-    "feats": "node -e \"require('./feats).compute('.bin/problems/62612cd.sgf', '.bin/features')\"",
-    "fview": "node fview .bin/features.json .bin/features.txt",
+    "solve": "node js/solve node_modules/sgf-problems/gop/12354.sgf .bin/test/vars.sgf 20 7",
+    "vplay": "node js/vplay .bin/test/vars.sgf .bin/test/subp",    
+    "feats": "node -e \"require('./js/feats).compute('.bin/problems/62612cd.sgf', '.bin/features')\"",
+    "fview": "node js/fview .bin/features.json .bin/features.txt",
 
-    "solve-all": "node solve-all .bin/solutions 20 7",
-    "vplay-all": "node vplay-all .bin/solutions/*.sgf .bin/problems",
-    "validate": "node check-all .bin/problems/*.sgf 0.001",
-    "features": "node feats-all .bin/problems/*.sgf .bin/features",
+    "solve-all": "node js/solve-all .bin/solutions 20 7",
+    "vplay-all": "node js/vplay-all .bin/solutions/*.sgf .bin/problems",
+    "validate": "node js/check-all .bin/problems/*.sgf 0.001",
+    "features": "node js/feats-all .bin/problems/*.sgf .bin/features",
 
-    "pack-problems": "node pack .bin/problems/*.sgf .bin/problems.log",
-    "pack-features": "node pack .bin/features/*.json .bin/features.log",
+    "pack-problems": "node js/pack .bin/problems/*.sgf .bin/problems.log",
+    "pack-features": "node js/pack .bin/features/*.json .bin/features.log",
 
-    "stats": "node stats .bin/problems/*.sgf",
+    "stats": "node js/stats .bin/problems/*.sgf",
 
-    "make-tfrs": "python make-tfrs.py .bin/features .bin/main.tfrecords .bin/test.tfrecords 0.1 7",
-    "test-tfrs": "python test-tfrs.py .bin/test.tfrecords 10",
-    "read-tfrs": "python read-tfrs.py .bin/test.tfrecords 9",
+    "make-tfrs": "python py/make-tfrs.py .bin/features .bin/main.tfrecords .bin/test.tfrecords 0.1 7",
+    "test-tfrs": "python py/test-tfrs.py .bin/test.tfrecords 10",
+    "read-tfrs": "python py/read-tfrs.py .bin/test.tfrecords 9",
 
     "tensorboard": "start tensorboard --logdir=.bin/tf-logs",
-    "dcnn": "py dcnn.py .bin/main.tfrecords .bin/test.tfrecords 11 5 .bin/tf-models .bin/tf-logs",
-    "eval": "node dcnn .bin/tf-models/fc1-1-64.json .bin/problems/*.sgf"
+    "dcnn": "python py/dcnn.py .bin/main.tfrecords .bin/test.tfrecords 11 5 .bin/tf-models .bin/tf-logs",
+    "eval": "node js/dcnn .bin/tf-models/fc1-1-64.json .bin/problems/*.sgf"
   }
 }

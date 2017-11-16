@@ -25,7 +25,7 @@ const [, , dcnnFile, inputFiles] = process.argv;
 
 const WINDOW_SIZE = 11; // 11x11, must match the DCNN
 const WINDOW_HALF = WINDOW_SIZE / 2 | 0;
-const STEP_DURATION = 5.0; // seconds
+const STEP_DURATION = 1.0; // seconds
 
 console.log(`Reconstructing DCNN from ${dcnnFile}`);
 const evalDCNN = reconstructDCNN(JSON.parse(fstext.read(dcnnFile)))
@@ -52,18 +52,7 @@ for (const path of paths) {
     const board = solver.board;
     const target = solver.target;
     const [x, y] = tsumego.stone.coords(target);
-
-    planes.fill(0); // just in case
-
-    features(planes, board, { x, y });
-
-    // (x + 1, y + 1) is to account for the wall
-    slice(fslice, planes, [board.size + 2, board.size + 2, F_COUNT],
-        [y + 1 - WINDOW_HALF, y + 1 + WINDOW_HALF],
-        [x + 1 - WINDOW_HALF, x + 1 + WINDOW_HALF],
-        [0, F_COUNT - 1]);
-
-    const prediction = evalDCNN(fslice);
+    const prediction = evaluate(solver, [x, y], 1);
     const iscorrect = (value - 0.5) * (prediction - 0.5) > 0;
 
     const [average, n] = accuracy[asize] || [0, 0];
@@ -74,17 +63,92 @@ for (const path of paths) {
 
     total++;
 
+    // report progress in a fancy way
     if (Date.now() > t + STEP_DURATION * 1000) {
         t = Date.now();
-        console.log(`${(total / paths.length).toFixed(2)} files processed, ${(total / (t - t0)).toFixed(1)} K/s`);
+
+        const done = total / paths.length; // 0..1
+        const speed = total / (t - t0) * 1000; // SGF files per second
+        const remaining = (paths.length - total) / speed; // seconds
+
+        const length = 40;
+        const len1 = done * length | 0;
+        const len2 = length - len1;
+
+        const progress = '█'.repeat(len1) + '▒'.repeat(len2);
+        const percentage = (' ' + (done * 100 | 0)).slice(-2) + '%';
+        const rem_ms = (' ' + (remaining / 60 | 0) + ':' + (remaining | 0) % 60).slice(-5);
+        const eoln = total == paths.length ? '\n' : '\r';
+
+        process.stdout.write(percentage + ' ' + progress + ' ' + rem_ms + eoln);
     }
 }
 
+/**
+ * @param {tsumego.Solver} board 
+ */
+function evaluate(solver, [x, y], depth = 0) {
+    const board = solver.board;
+    const hash = board.hash;
+    const tblock = board.get(x, y);
+    const color = Math.sign(tblock);
+    const predictions = [1]; // if no moves available, the group is safe    
+
+    if (!tblock) // the target block has been captured
+        return 0;
+
+    if (depth < 1) {
+        planes.fill(0); // just in case
+
+        features(planes, board, { x, y });
+
+        // (x + 1, y + 1) is to account for the wall
+        slice(fslice, planes, [board.size + 2, board.size + 2, F_COUNT],
+            [y + 1 - WINDOW_HALF, y + 1 + WINDOW_HALF],
+            [x + 1 - WINDOW_HALF, x + 1 + WINDOW_HALF],
+            [0, F_COUNT - 1]);
+
+        return evalDCNN(fslice);
+    }
+
+    for (const move of solver.getValidMovesFor(-color)) {
+        if (!board.play(move)) // just in case
+            continue;
+
+        const responses = [evaluate(solver, [x, y])]; // it's allowed to pass
+
+        for (const resp of solver.getValidMovesFor(color)) {
+            if (!board.play(resp))
+                continue;
+
+            if (board.hash != hash) { // but not allowed to recapture a ko
+                const p = evaluate(solver, [x, y], depth - 1);
+                responses.push(p);
+            }
+
+            board.undo();
+        }
+
+        predictions.push(Math.max(...responses)); // it's trying to save the group
+        board.undo();
+    }
+
+    return Math.min(...predictions); // it's trying to capture the group
+}
+
 console.log('Accuracy by area size:');
+let asum = 0;
+
 for (let asize = 0; asize < accuracy.length; asize++) {
     const [average, n] = accuracy[asize] || [0, 0];
-    n && console.log(format('{0:2} {1:4} {2:4}', asize, average.toFixed(2), n));
+
+    if (n > 0) {
+        console.log(format('{0:2} {1:4} {2:4}', asize, average.toFixed(2), n));
+        asum += n * average;
+    }
 }
+
+console.log('Average: ' + (asum / total).toFixed(2));
 
 function print(name, size, depth, data) {
     console.log(name + ' = [ // ' + size + 'x' + size + 'x' + depth);

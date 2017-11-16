@@ -17,7 +17,7 @@ with move `r`. Black tries to minimize the chances of the
 white group to live and white tries to maximize these chances.
 The [DFS solver](https://github.com/d180cf/tsumego.js)
 essentially does this - it recursively computes the value of `f(B)`.
-The point of the DCNN is to predict the value of `f(B)`.
+The point of the DCNN is to predict this value.
 
 Currently, the best result is 94% accuracy. This is achieved
 with a stack of 3 residual blocks with 64 outputs each. Note,

@@ -34,6 +34,7 @@ console.log(`Reading SGF files from ${inputFiles}`);
 const paths = glob.sync(inputFiles);
 console.log(paths.length + ' files total');
 const accuracy = []; // accuracy[asize] = [average, count]
+let totalAccuracy = 0;
 
 let t = Date.now(), t0 = t;
 let total = 0;
@@ -52,8 +53,10 @@ for (const path of paths) {
     const board = solver.board;
     const target = solver.target;
     const [x, y] = tsumego.stone.coords(target);
-    const prediction = evaluate(solver, [x, y], 1);
+    const prediction = evaluate(solver, [x, y], 0);
     const iscorrect = (value - 0.5) * (prediction - 0.5) > 0;
+
+    totalAccuracy = (totalAccuracy * total + (iscorrect ? 1 : 0)) / (total + 1);
 
     const [average, n] = accuracy[asize] || [0, 0];
 
@@ -69,7 +72,6 @@ for (const path of paths) {
 
         const done = total / paths.length; // 0..1
         const speed = total / (t - t0) * 1000; // SGF files per second
-        const remaining = (paths.length - total) / speed; // seconds
 
         const length = 40;
         const len1 = done * length | 0;
@@ -77,10 +79,10 @@ for (const path of paths) {
 
         const progress = '█'.repeat(len1) + '▒'.repeat(len2);
         const percentage = (' ' + (done * 100 | 0)).slice(-2) + '%';
-        const rem_ms = (' ' + (remaining / 60 | 0) + ':' + (remaining | 0) % 60).slice(-5);
+        const accs = (totalAccuracy.toFixed(2) + '0').slice(0, 4);
         const eoln = total == paths.length ? '\n' : '\r';
 
-        process.stdout.write(percentage + ' ' + progress + ' ' + rem_ms + eoln);
+        process.stdout.write(percentage + ' ' + progress + ' ' + accs + eoln);
     }
 }
 

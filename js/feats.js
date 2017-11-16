@@ -20,7 +20,9 @@ function compute(input, output) {
     const tblock = board.get(target);
     const color = tsumego.sign(tblock);
     const [x, y] = tsumego.stone.coords(target);
-    const feats = features(board, { x, y });
+    const feats = new Array((board.size + 2) ** 2 * F_COUNT);
+
+    features(feats, board, { x, y });
 
     const config = {
         safe: +(/\bTS\[(\d+)\]/.exec(sgf) || [])[1], // the label

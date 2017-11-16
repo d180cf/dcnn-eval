@@ -26,12 +26,12 @@
 
     "stats": "node js/stats .bin/problems/*.sgf",
 
-    "make-tfrs": "python py/make-tfrs.py .bin/features .bin/main.tfrecords .bin/test.tfrecords 0.1 7",
+    "tfrecords": "python py/make-tfrs.py .bin/features .bin/main.tfrecords .bin/test.tfrecords 0.1",
     "test-tfrs": "python py/test-tfrs.py .bin/test.tfrecords 10",
     "read-tfrs": "python py/read-tfrs.py .bin/test.tfrecords 9",
 
     "tensorboard": "start tensorboard --logdir=.bin/tf-logs",
-    "dcnn": "python py/dcnn.py .bin/main.tfrecords .bin/test.tfrecords 11 5 .bin/tf-models .bin/tf-logs",
+    "dcnn": "python py/dcnn.py .bin/main.tfrecords .bin/test.tfrecords 11 12 .bin/tf-models .bin/tf-logs",
     "eval": "node js/dcnn .bin/tf-models/fc1-1-64.json .bin/problems/*.sgf"
   }
 }

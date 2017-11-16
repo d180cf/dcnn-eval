@@ -12,7 +12,6 @@ dirpath = sys.argv[1] # dir with *.json files
 mainfilepath = sys.argv[2] # *.tfrecords file
 testfilepath = sys.argv[3] # *.tfrecords file
 testprob = float(sys.argv[4]) # 0.1 = 10% goes to test
-minareasize = int(sys.argv[5])
 
 def _int64s(items):
   flat = np.array(items).reshape([-1])
@@ -35,10 +34,6 @@ def main(args):
 
     data = json.load(open(os.path.join(dirpath, name)))
     asize = data["asize"] # area size
-
-    if size < minareasize:
-      continue
-
     planes = data['features']
 
     props = {

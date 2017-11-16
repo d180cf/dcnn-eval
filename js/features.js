@@ -1,12 +1,25 @@
 const tsumego = require('tsumego.js');
 
-const F_WALL = 0;
-const F_ALLY = 1;
-const F_ENEMY = 2;
-const F_ATARI = 3;
-const F_SIZE_1 = 4;
+const F_COUNT = 12; // the number of features
 
-const F_COUNT = 5; // number of features
+const [
+
+    F_WALL,
+    F_ALLY,
+    F_ENEMY,
+    F_TARGET,
+
+    F_LIBS_1,
+    F_LIBS_2,
+    F_LIBS_3,
+    F_LIBS_4, // 4+ libs
+
+    F_SIZE_1,
+    F_SIZE_2,
+    F_SIZE_3,
+    F_SIZE_4, // 4+ stones
+
+] = Array.from(Array(F_COUNT).keys());
 
 exports.F_COUNT = F_COUNT;
 
@@ -47,8 +60,17 @@ exports.features = function features(result, board, target) {
 
                 result[base + F_ALLY] = block * color > 0 ? 1 : 0;
                 result[base + F_ENEMY] = block * color < 0 ? 1 : 0;
-                result[base + F_ATARI] = nlibs == 1 ? 1 : 0;
+                result[base + F_TARGET] = block == tblock ? 1 : 0;
+
+                result[base + F_LIBS_1] = nlibs == 1 ? 1 : 0;
+                result[base + F_LIBS_2] = nlibs == 2 ? 1 : 0;
+                result[base + F_LIBS_3] = nlibs == 3 ? 1 : 0;
+                result[base + F_LIBS_4] = nlibs >= 4 ? 1 : 0;
+
                 result[base + F_SIZE_1] = nsize == 1 ? 1 : 0;
+                result[base + F_SIZE_2] = nsize == 2 ? 1 : 0;
+                result[base + F_SIZE_3] = nsize == 3 ? 1 : 0;
+                result[base + F_SIZE_4] = nsize >= 4 ? 1 : 0;
             }
         }
     }

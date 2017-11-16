@@ -7,6 +7,18 @@ for the single black stone:
 
 <img src="https://rawgit.com/d180cf/tsumego.js/master/docs/pics/13083.svg" height="200pt" title="goproblems.com/13083" />
 
+The safety status of the group can be defined as
+
+![](http://latex.codecogs.com/gif.latex?f(B)=\min_{m}\max_{r}{f(B+m+r)})
+
+Assuming the target group is white, `f(B)` can be computed
+by letting black play move `m`, then letting white defend
+with move `r`. Black tries to minimize the chances of the
+white group to live and white tries to maximize these chances.
+The [DFS solver](https://github.com/d180cf/tsumego.js)
+essentially does this - it recursively computes the value of `f(B)`.
+The point of the DCNN is to predict the value of `f(B)`.
+
 Currently, the best result is 94% accuracy. This is achieved
 with a stack of 3 residual blocks with 64 outputs each. Note,
 that a random number generator would have 50% accuracy because

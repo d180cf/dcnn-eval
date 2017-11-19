@@ -9,7 +9,7 @@ for the single black stone:
 
 The safety status of the group can be defined as
 
-![](http://latex.codecogs.com/gif.latex?f(B)=\min_{m}\max_{r}{f(B+m+r)})
+![](http://latex.codecogs.com/svg.latex?f(B)=\min_{m}\max_{r}{f(B+m+r)})
 
 Assuming the target group is white, `f(B)` can be computed
 by letting black play move `m`, then letting white defend

@@ -24,8 +24,8 @@ N = int(sysarg(3)) # board frame size, e.g. 11 x 11
 F = int(sysarg(4)) # the number of features features, e.g. 5
 models_dir = sysarg(5) # the checkpoint file for weights
 logs_path = sysarg(6) # tensorboard logs
-duration = float(sysarg(7)) # e.g. 3.5 (hours)
-NN_INFO = sysarg(8) # e.g. "rb1(3,64)"
+duration = float(sysarg(7) or 1.5) # hours
+NN_INFO = sysarg(8) or 'rb1(3,64)' # model name + params
 
 if not NN_INFO:
     print('NN name not specified')
@@ -50,6 +50,12 @@ print('NN info: ' + NN_INFO)
 model_file = models_dir + '/' + model_name + '.json'
 os.makedirs(models_dir, exist_ok=True)
 print('Model file: ' + model_file)
+
+tb_indx = 1
+while os.path.isdir(logs_path + '/' + model_name + '/' + str(tb_indx)):
+    tb_indx += 1
+tb_path = logs_path + '/' + model_name + '/' + str(tb_indx)
+print('TensorBoard logs: ' + tb_path)
 
 T = time.time()
 print('T = ' + datetime.datetime.now().isoformat())
@@ -188,11 +194,8 @@ with tf.Session() as session:
     tf.summary.scalar('C_learning_rate', learning_rate)
     merged = tf.summary.merge_all()
 
-    lg_path = '%s/%s' % (logs_path, model_name)
-    tprint('TensorBoard logs: ' + lg_path)
-
-    test_writer = tf.summary.FileWriter(lg_path + '/validation')
-    main_writer = tf.summary.FileWriter(lg_path + '/training', session.graph)
+    test_writer = tf.summary.FileWriter(tb_path + '/validation')
+    main_writer = tf.summary.FileWriter(tb_path + '/training', session.graph)
 
     lr = LR_INITIAL
     lr_next_decay = LR_DECAY

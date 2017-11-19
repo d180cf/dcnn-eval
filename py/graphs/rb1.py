@@ -14,7 +14,11 @@ def make_dcnn(images, labels, learning_rate, d = 3, n = 64):
     print(2, x.shape)
 
     for i in range(d):
-        x = nnu.resb(x, n, name='residual-'+str(i))
+        y = tf.identity(x)
+        x = fconn(x, n, name='conn-0')
+        x = tf.nn.relu(x)
+        x = fconn(x, n, name='conn-1')
+        x = tf.nn.relu(x + y)
         print(3, x.shape)
 
     x = nnu.fconn(x, 1, name='readout')

@@ -15,12 +15,3 @@ def fconn(x, n, name=None):
         w = weights([m, n])
         b = bias([n])
         return tf.matmul(x, w) + b
-
-# a residual block: two fully connected layers + a skip connection
-def resb(x, n, name=None):
-    with tf.name_scope(name):        
-        y = tf.identity(x)
-        x = fconn(x, n, name='conn-0')
-        x = tf.nn.relu(x)
-        x = fconn(x, n, name='conn-1')
-        return tf.nn.relu(x + y)

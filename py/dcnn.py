@@ -116,8 +116,8 @@ def parse(example):
     return (label[1], image)
 
 def make_dataset(filepath):
-    dataset = tf.data.TFRecordDataset(filepath)
-    dataset = dataset.map(parse)
+    dataset = tf.data.TFRecordDataset(filepath, buffer_size=2**30)
+    dataset = dataset.map(parse, num_parallel_calls=4)
     dataset = dataset.shuffle(SHUFFLE_WINDOW)
     dataset = dataset.repeat()
     dataset = dataset.batch(BATCH_SIZE)
@@ -163,7 +163,7 @@ def correlation(x, y):
 
 print('Constructing DCNN...')
 make_dcnn = import_module('graphs.' + NN_NAME).make_dcnn
-(prediction, loss, optimizer) = make_dcnn(images, labels, learning_rate, *NN_ARGS)
+(prediction, loss, optimizer) = make_dcnn(images, labels, learning_rate, is_training, *NN_ARGS)
 
 avg_1 = tf.reduce_sum(labels * prediction) / tf.cast(tf.count_nonzero(labels), tf.float32)
 avg_0 = tf.reduce_sum((1 - labels) * prediction) / tf.cast(tf.count_nonzero(1 - labels), tf.float32)
@@ -199,9 +199,12 @@ with tf.Session() as session:
 
     lr = LR_INITIAL
     lr_next_decay = LR_DECAY
-    step = 0 # the number of samples used for training
+    step = 0 # the number of samples used for training so far
+    prev = 0
 
-    tprint('%5s %5s %5s %5s' % ('err', 'corr', 'save', 'tb'))
+    tprint('')
+    tprint('%5s %5s %5s %5s %5s' % ('err', 'corr', 'save', 'tb', 'speed'))
+    tprint('')
 
     try:
         while time.time() < T + duration * 3600:
@@ -218,7 +221,9 @@ with tf.Session() as session:
             test_writer.add_summary(summary, step)
 
             t2 = time.time()
-            tprint('%5.2f %5.2f %5.1f %5.1f' % (_error, _corr, t1 - t0, t2 - t1))
+            speed = (step - prev) / EPOCH_DURATION / 1000 # K samples per second
+            prev = step
+            tprint('%5.2f %5.2f %5.1f %5.1f %5.1f' % (_error, _corr, t1 - t0, t2 - t1, speed))
 
             while time.time() < t2 + EPOCH_DURATION:
                 _labels, _images = session.run(next_batch_main)

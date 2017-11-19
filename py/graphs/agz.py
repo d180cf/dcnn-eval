@@ -14,7 +14,7 @@ from . import nnu
 # 5. A fully connected layer with 1 output, followed by tanh.
 #
 # Highest observed accuracy: 0.?? with N = ?, W = ?, M = ?
-def make_dcnn(images, labels, learning_rate, n_resblocks = 1, n_filters = 64, n_output = 64):
+def make_dcnn(images, labels, learning_rate, is_training, n_resblocks = 1, n_filters = 64, n_output = 64):
     def bnorm(x):
         n_out = int(x.shape[3])
         beta = tf.Variable(tf.constant(0.0, shape=[n_out]))

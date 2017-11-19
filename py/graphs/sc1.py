@@ -3,7 +3,7 @@ from . import nnu
 
 # applies 3x3 convolutions, then a dense layer, then readout
 # highest observed accuracy: 0.80
-def make_dcnn(images, labels, learning_rate, n_conv = 3, n_filters = 64, n_output = 64):    
+def make_dcnn(images, labels, learning_rate, is_training, n_conv = 3, n_filters = 64, n_output = 64):    
     def conv(x, k, n):
         b = nnu.bias([n])
         f = int(x.shape[3]) # [-1, 9, 9, 5]

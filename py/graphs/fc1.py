@@ -9,7 +9,7 @@ from . import nnu
 #   0.85 when d=1 n=128
 #   0.80 when d=2 n=16
 #   0.86 when d=2 n=64
-def make_dcnn(images, labels, learning_rate, d = 2, n = 64):
+def make_dcnn(images, labels, learning_rate, is_training, d = 2, n = 64):
     print(0, images.shape)
     (_, _, N, F) = images.shape
 

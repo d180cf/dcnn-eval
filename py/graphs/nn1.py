@@ -3,7 +3,7 @@ from . import nnu
 
 # www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf
 # highest observed accuracy: 0.82
-def make_dcnn(images, labels, learning_rate):
+def make_dcnn(images, labels, learning_rate, is_training):
     print(0, images.shape)
     (_, _, N, F) = images.shape
     N = int(N)

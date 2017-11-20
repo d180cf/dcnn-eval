@@ -10,6 +10,7 @@ def make_dcnn(images, labels, learning_rate, is_training, d = 3, n = 64):
     print(1, x.shape)
 
     x = nnu.fconn(x, n, name='internal')
+    x = tf.layers.batch_normalization(x, training=is_training)
     x = tf.nn.relu(x)
     print(2, x.shape)
 

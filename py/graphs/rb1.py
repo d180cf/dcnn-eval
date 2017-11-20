@@ -35,7 +35,7 @@ def make_dcnn(images, labels, learning_rate, is_training, d = 3, n = 64):
     y = tf.reshape(x, [-1])
     e = tf.losses.mean_squared_error(labels, y)
 
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate)
+    optimizer = tf.train.AdamOptimizer()
     with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
         minimize = optimizer.minimize(e)
         return (y, e, minimize)

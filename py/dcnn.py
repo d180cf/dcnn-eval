@@ -117,7 +117,7 @@ def parse(example):
 
 def make_dataset(filepath):
     dataset = tf.data.TFRecordDataset(filepath, buffer_size=2**30)
-    dataset = dataset.map(parse, num_parallel_calls=4)
+    dataset = dataset.map(parse, num_parallel_calls=3)
     dataset = dataset.shuffle(SHUFFLE_WINDOW)
     dataset = dataset.repeat()
     dataset = dataset.batch(BATCH_SIZE)

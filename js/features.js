@@ -1,6 +1,6 @@
 const tsumego = require('tsumego.js');
 
-const F_COUNT = 12; // the number of features
+const F_COUNT = 13; // the number of features
 
 const [
 
@@ -8,6 +8,7 @@ const [
     F_ALLY,
     F_ENEMY,
     F_TARGET,
+    F_SURE_EYE,
 
     F_LIBS_1,
     F_LIBS_2,
@@ -61,6 +62,7 @@ exports.features = function features(result, board, target) {
                 result[base + F_ALLY] = block * color > 0 ? 1 : 0;
                 result[base + F_ENEMY] = block * color < 0 ? 1 : 0;
                 result[base + F_TARGET] = block == tblock ? 1 : 0;
+                result[base + F_SURE_EYE] = isSureEye(board, +1, x, y) || isSureEye(board, -1, x, y) ? 1 : 0;
 
                 result[base + F_LIBS_1] = nlibs == 1 ? 1 : 0;
                 result[base + F_LIBS_2] = nlibs == 2 ? 1 : 0;
@@ -74,4 +76,88 @@ exports.features = function features(result, board, target) {
             }
         }
     }
+}
+
+/**
+ * Detects 1-point sure eyes.
+ * 
+ * @param {tsumego.Board} board 
+ * @param {number} color 
+ * @param {number} x 
+ * @param {number} y 
+ */
+function isSureEye(board, color, x, y) {
+    const n = board.size;
+
+    const get = (dx, dy) => board.get(x + dx, y + dy);
+    const dist = (x, y) => Math.min(x, n - 1 - x) + Math.min(y, n - 1 - y);
+    const isWall = (dx, dy) => !board.inBounds(x + dx, y + dy);
+    const isCorner = (dx, dy) => dist(x + dx, y + dy) == 0;
+
+    if (get(0, 0))
+        return false;
+
+    let count = 0;
+    let ndiag = 0;
+    let nwall = 0;
+    let necrn = 0;
+
+    for (let dx = -1; dx <= +1; dx++) {
+        for (let dy = -1; dy <= +1; dy++) {
+            if (isWall(dx, dy)) {
+                nwall++;
+            } else {
+                const x = get(dx, dy);
+
+                if (x * color > 0) {
+                    count++;
+
+                    if (dx && dy)
+                        ndiag++;
+                } else if (!x && isCorner(dx, dy)) {
+                    necrn++;
+                }
+            }
+        }
+    }
+
+    switch (count) {
+        case 8:
+            // X X X
+            // X - X
+            // X X X
+            return true;
+
+        case 7:
+            // X X X
+            // X - X
+            // X X -
+            return ndiag == 3;
+
+        case 6:
+            // X X -
+            // X - X
+            // X X -
+            return necrn == 1;
+
+        case 5:
+            // X X - //  X - -
+            // X - - //  X - -
+            // X X - //  X X X
+            return nwall == 3;
+
+        case 4:
+            // X - -
+            // X - -
+            // X X -        
+            return nwall == 4;
+
+        case 3:
+            // - - -
+            // X - -
+            // X X -        
+            return nwall == 5;
+    }
+
+    return false;
 }

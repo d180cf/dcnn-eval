@@ -191,7 +191,7 @@ with tf.Session() as session:
     tf.summary.scalar('A_correlation', corr)
     tf.summary.scalar('B_avg_0', avg_0)
     tf.summary.scalar('B_avg_1', avg_1)
-    tf.summary.scalar('C_learning_rate', learning_rate)
+    # tf.summary.scalar('C_learning_rate', learning_rate)
     merged = tf.summary.merge_all()
 
     test_writer = tf.summary.FileWriter(tb_path + '/validation')
@@ -203,7 +203,7 @@ with tf.Session() as session:
     prev = 0
 
     tprint('')
-    tprint('%5s %5s %5s %5s %5s' % ('err', 'corr', 'save', 'tb', 'speed'))
+    tprint('%5s %5s %5s %5s %5s' % ('error', 'corr', 'save', 'tb', 'M/hr'))
     tprint('')
 
     try:
@@ -221,7 +221,7 @@ with tf.Session() as session:
             test_writer.add_summary(summary, step)
 
             t2 = time.time()
-            speed = (step - prev) / EPOCH_DURATION / 1000 # K samples per second
+            speed = (step - prev) / EPOCH_DURATION * 3600 / 1e6 # millions samples per hour
             prev = step
             tprint('%5.2f %5.2f %5.1f %5.1f %5.1f' % (_error, _corr, t1 - t0, t2 - t1, speed))
 

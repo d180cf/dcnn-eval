@@ -4,7 +4,7 @@
   "dependencies": {
     "command-line-args": "4.0.7",
     "sgf-problems": "https://github.com/d180cf/problems#v2.0.1",
-    "tsumego.js": "1.0.4",
+    "tsumego.js": "1.1.0",
     "md5": "2.2.1",
     "glob": "7.1.2",
     "mkdirp": "0.5.1",
@@ -32,6 +32,6 @@
 
     "tensorboard": "start tensorboard --logdir=.bin/tf-logs",
     "dcnn": "python py/dcnn.py .bin/main.tfrecords .bin/test.tfrecords 11 13 .bin/tf-models .bin/tf-logs 15 rb1(1,256)",
-    "eval": "node js/dcnn .bin/tf-models/rb1-1-256-snapshot.json .bin/problems/*.sgf"
+    "eval": "node js/eval-dcnn .bin/tf-models/rb1-1-256-snapshot.json .bin/problems/*77.sgf"
   }
 }

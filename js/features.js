@@ -1,5 +1,3 @@
-const tsumego = require('tsumego.js');
-
 const F_COUNT = 13; // the number of features
 
 const [
@@ -56,8 +54,7 @@ exports.features = function features(result, board, target) {
                 result[base + F_WALL] = 1;
             } else {
                 const block = board.get(x, y);
-                const nlibs = tsumego.block.libs(block);
-                const nsize = tsumego.block.size(block);
+                const { libs: nlibs, size: nsize } = board.getBlockInfo(x, y);
 
                 result[base + F_ALLY] = block * color > 0 ? 1 : 0;
                 result[base + F_ENEMY] = block * color < 0 ? 1 : 0;

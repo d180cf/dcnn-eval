@@ -21,11 +21,15 @@ const fstext = require('./fstext');
 const format = require('./format');
 const { features, F_COUNT } = require('./features');
 
-const [, , dcnnFile, inputFiles, searchDepth] = process.argv;
+const [, , dcnnFile, inputFiles, weightsBinaryPrecision, searchDepth] = process.argv;
 
+const WEIGHTS_BIN_DIGITS = +weightsBinaryPrecision || 0; // the number of bits per weight
 const WINDOW_SIZE = 11; // 11x11, must match the DCNN
 const WINDOW_HALF = WINDOW_SIZE / 2 | 0;
 const STEP_DURATION = 1.0; // seconds
+
+if (WEIGHTS_BIN_DIGITS > 0)
+    console.log('Weights precision reduced to ' + WEIGHTS_BIN_DIGITS + ' bits');
 
 console.log(`Reconstructing DCNN from ${dcnnFile}`);
 const evalDCNN = reconstructDCNN(JSON.parse(fstext.read(dcnnFile)))
@@ -221,9 +225,13 @@ function reconstructDCNN(json) {
 
     */
 
+    const wmul = 1 << WEIGHTS_BIN_DIGITS;
+
     function get(name) {
         const v = json.vars[name];
-        return v && v.data;
+        const w = v && v.data;
+
+        return !w || wmul == 1 ? w : w.map(x => Math.round(x * wmul) / wmul);
     }
 
     function fconn(x, w, b) {

@@ -170,9 +170,13 @@ avg_0 = tf.reduce_sum((1 - labels) * prediction) / tf.cast(tf.count_nonzero(1 - 
 error = 1 - tf.reduce_mean(tf.nn.relu(tf.sign((prediction - 0.5) * (labels - 0.5))))
 corr = correlation(prediction, labels)
 
-print('DCNN variables:')
+print('Trainable variables:')
 for v in tf.trainable_variables():
-    print(v.shape, v.name)
+    print('%15s %s' % (v.shape, v.name))
+
+print('UPDATE_OPS:')
+for v in tf.get_collection(tf.GraphKeys.UPDATE_OPS):
+    print('%15s %s' % (v.shape, v.name))
 
 print('Starting the session...')
 with tf.Session() as session:
@@ -203,7 +207,7 @@ with tf.Session() as session:
     prev = 0
 
     tprint('')
-    tprint('%5s %5s %5s %5s %5s' % ('error', 'corr', 'save', 'test', 'M/hr'))
+    tprint('%5s %5s %5s %5s %5s %7s' % ('step', 'error', 'corr', 'save', 'test', 'perf'))
     tprint('')
 
     try:
@@ -221,9 +225,15 @@ with tf.Session() as session:
             test_writer.add_summary(summary, step)
 
             t2 = time.time()
-            speed = (step - prev) / EPOCH_DURATION * 3600 / 1e6 # millions samples per hour
+            speed = (step - prev) / EPOCH_DURATION * 3600 / 1e6 # thousands samples per hour
             prev = step
-            tprint('%5.2f %5.2f %5.1f %5.1f %5.1f' % (_error, _corr, t1 - t0, t2 - t1, speed))
+            tprint('%5s %5.2f %5.2f %5s %5s %7s' % (
+                '%4.1fM' % (step / 1e6),
+                _error,
+                _corr,
+                '%4.1fs' % (t1 - t0),
+                '%4.1fs' % (t2 - t1),
+                '%4.1fM/h' % speed))
 
             while time.time() < t2 + EPOCH_DURATION:
                 _labels, _images = session.run(next_batch_main)
@@ -241,4 +251,4 @@ with tf.Session() as session:
                 tprint('learning rate = %f' % lr)
                 
     except KeyboardInterrupt:
-        tprint('Terminated by Ctrl+C')
+        sys.exit()

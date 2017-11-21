@@ -5,7 +5,7 @@ and can recapture any ko. For example, the group below
 is unsafe, so the DCNN should return a negative number
 for the single black stone:
 
-<img src="rawgit.com/d180cf/tsumego.js/master/docs/pics/13083.svg" height="200pt" title="goproblems.com/13083" />
+<img src="http://rawgit.com/d180cf/tsumego.js/master/docs/pics/13083.svg" height="200pt" title="goproblems.com/13083" />
 
 The safety status of the group can be defined as
 

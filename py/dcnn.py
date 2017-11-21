@@ -115,19 +115,19 @@ def parse(example):
 
     return (label[1], image)
 
-def make_dataset(filepath):
-    dataset = tf.data.TFRecordDataset(filepath, buffer_size=2**30)
+def make_dataset(filepath, batchsize):
+    dataset = tf.data.TFRecordDataset(filepath, buffer_size=2**29)
     dataset = dataset.map(parse, num_parallel_calls=3)
     dataset = dataset.shuffle(SHUFFLE_WINDOW)
     dataset = dataset.repeat()
-    dataset = dataset.batch(BATCH_SIZE)
+    dataset = dataset.batch(batchsize)
     return dataset
 
 tprint('Initializing the main dataset...')    
-dataset_main = make_dataset(ds_main)
+dataset_main = make_dataset(ds_main, BATCH_SIZE)
 
 tprint('Initializing the test dataset...')    
-dataset_test = make_dataset(ds_test)
+dataset_test = make_dataset(ds_test, SHUFFLE_WINDOW)
 
 images = tf.placeholder(tf.float32, shape=[None, N, N, F])
 labels = tf.placeholder(tf.float32, shape=[None])
@@ -172,8 +172,9 @@ corr = correlation(prediction, labels)
 
 print('DCNN variables:')
 for v in tf.trainable_variables():
-    print(v)
+    print(v.shape, v.name)
 
+print('Starting the session...')
 with tf.Session() as session:
     iterator_main = dataset_main.make_initializable_iterator()
     next_batch_main = iterator_main.get_next()    
@@ -181,9 +182,8 @@ with tf.Session() as session:
 
     iterator_test = dataset_test.make_initializable_iterator()
     next_batch_test = iterator_test.get_next()    
-    session.run(iterator_test.initializer)    
+    session.run(iterator_test.initializer)
 
-    tprint('Initializing global variables...')
     session.run(tf.global_variables_initializer())    
 
     tf.summary.scalar('A_error', error)
@@ -203,7 +203,7 @@ with tf.Session() as session:
     prev = 0
 
     tprint('')
-    tprint('%5s %5s %5s %5s %5s' % ('error', 'corr', 'save', 'tb', 'M/hr'))
+    tprint('%5s %5s %5s %5s %5s' % ('error', 'corr', 'save', 'test', 'M/hr'))
     tprint('')
 
     try:

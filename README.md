@@ -9,13 +9,13 @@ for the single black stone:
 
 The safety status of the group can be defined as
 
-![](latex.codecogs.com/svg.latex?f(B)=\min_{m}\max_{r}{f(B+m+r)})
+![](http://latex.codecogs.com/svg.latex?f(B)=\min_{m}\max_{r}{f(B+m+r)})
 
 Assuming the target group is white, `f(B)` can be computed
 by letting black play move `m`, then letting white defend
 with move `r`. Black tries to minimize the chances of the
 white group to live and white tries to maximize these chances.
-The [DFS solver](github.com/d180cf/tsumego.js)
+The [DFS solver](http://github.com/d180cf/tsumego.js)
 essentially does this - it recursively computes the value of `f(B)`.
 The point of the DCNN is to predict this value.
 
@@ -71,14 +71,14 @@ More features to be implemented:
 # Design
 
 This set of feature tensors is fed to a Python script that uses
-[TensorFlow](github.com/tensorflow/tensorflow) to find the DCNN parameters.
+[TensorFlow](http://github.com/tensorflow/tensorflow) to find the DCNN parameters.
 Once the DCNN parameters are found, they can be exported to a file and the tsumego
-solver can use [keras.js](github.com/transcranial/keras-js) or [WebDNN](github.com/mil-tokyo/webdnn)
-to evaluate the board and refine the search. The DCNN can be quickly trained on [AWS](aws.amazon.com/tensorflow).
+solver can use [keras.js](http://github.com/transcranial/keras-js) or [WebDNN](http://github.com/mil-tokyo/webdnn)
+to evaluate the board and refine the search. The DCNN can be quickly trained on [AWS](http://aws.amazon.com/tensorflow).
 
 A typical DCNN consist of a few
 convolution layers of size `3x3:16:16` (the number of filters is TBD, but the
-kernel size `3x3` is pretty much standard and is used in state-of-the-art programs like [AGZ](deepmind.com/blog/alphago-zero-learning-scratch/)).
+kernel size `3x3` is pretty much standard and is used in state-of-the-art programs like [AGZ](http://deepmind.com/blog/alphago-zero-learning-scratch/)).
 Applying such a convolution to an input image stack of size `7x7:16` needs `7x7x3x3x16x16 = 112K`
 multiplications-additions and if there are 3-4 layers this number grows to `500K`
 which might seem a lot, but it turns out the the current JS V8 makes `~50 M/s` so it
@@ -87,8 +87,8 @@ that in web it can use multiple threads (web workers) and GPU (weblas, keras.js,
 
 There are quite a few possible NN designs:
 
-1. [All conv kernels mixed together](www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf)
-2. [AlphaGoZero-style NN: 40 residual blocks with batch norm](www.nature.com/articles/nature24270.epdf?author_access_token=VJXbVjaSHxFoctQQ4p2k4tRgN0jAjWel9jnR3ZoTv0PVW4gB86EEpGqTRDtpIz-2rmo8-KG06gqVobU5NSCFeHILHcVFUeMsbvwS-lxjqQGg98faovwjxeTUgZAUMnRQ)
+1. [All conv kernels mixed together](http://www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf)
+2. [AlphaGoZero-style NN: 40 residual blocks with batch norm](http://www.nature.com/articles/nature24270.epdf?author_access_token=VJXbVjaSHxFoctQQ4p2k4tRgN0jAjWel9jnR3ZoTv0PVW4gB86EEpGqTRDtpIz-2rmo8-KG06gqVobU5NSCFeHILHcVFUeMsbvwS-lxjqQGg98faovwjxeTUgZAUMnRQ)
 
 # Training
 
@@ -150,7 +150,7 @@ The strange maximum around 7 must be related to the fact that the DCNN was train
 
 # Compression
 
-It's [known](arxiv.org/pdf/1701.00485.pdf) that in many cases reducing precision of the weights doesn't reduce much accuracy of the NN.
+It's [known](http://arxiv.org/pdf/1701.00485.pdf) that in many cases reducing precision of the weights doesn't reduce much accuracy of the NN.
 
 bits | error
 ---- | -----

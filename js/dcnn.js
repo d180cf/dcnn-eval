@@ -21,7 +21,7 @@ const fstext = require('./fstext');
 const format = require('./format');
 const { features, F_COUNT } = require('./features');
 
-const [, , dcnnFile, inputFiles] = process.argv;
+const [, , dcnnFile, inputFiles, searchDepth] = process.argv;
 
 const WINDOW_SIZE = 11; // 11x11, must match the DCNN
 const WINDOW_HALF = WINDOW_SIZE / 2 | 0;
@@ -32,7 +32,7 @@ const evalDCNN = reconstructDCNN(JSON.parse(fstext.read(dcnnFile)))
 
 console.log(`Reading SGF files from ${inputFiles}`);
 const paths = glob.sync(inputFiles);
-console.log(paths.length + ' files total');
+console.log((paths.length / 1000).toFixed(0) + ' K files total');
 const accuracy = []; // accuracy[asize] = [average, count]
 let totalAccuracy = 0;
 
@@ -53,7 +53,7 @@ for (const path of paths) {
     const board = solver.board;
     const target = solver.target;
     const [x, y] = tsumego.stone.coords(target);
-    const prediction = evaluate(solver, [x, y], 0);
+    const prediction = evaluate(solver, [x, y], +searchDepth || 0);
     const iscorrect = (value - 0.5) * (prediction - 0.5) > 0;
 
     totalAccuracy = (totalAccuracy * total + (iscorrect ? 1 : 0)) / (total + 1);
@@ -67,7 +67,7 @@ for (const path of paths) {
     total++;
 
     // report progress in a fancy way
-    if (Date.now() > t + STEP_DURATION * 1000) {
+    if (Date.now() > t + STEP_DURATION * 1000 || total == paths.length) {
         t = Date.now();
 
         const done = total / paths.length; // 0..1
@@ -77,12 +77,15 @@ for (const path of paths) {
         const len1 = done * length | 0;
         const len2 = length - len1;
 
-        const progress = '█'.repeat(len1) + '▒'.repeat(len2);
-        const percentage = (' ' + (done * 100 | 0)).slice(-2) + '%';
-        const accs = (totalAccuracy.toFixed(2) + '0').slice(0, 4);
-        const eoln = total == paths.length ? '\n' : '\r';
+        process.stdout.write([
+            (' ' + (done * 100 | 0)).slice(-3) + '%',
+            '\u2588'.repeat(len1) + '\u2592'.repeat(len2),
+            (totalAccuracy.toFixed(2) + '0').slice(0, 4),
+            speed.toFixed(0) + ' N/s'
+        ].join(' ') + '\r');
 
-        process.stdout.write(percentage + ' ' + progress + ' ' + accs + eoln);
+        if (total == paths.length)
+            process.stdout.write('\n');
     }
 }
 
@@ -138,19 +141,21 @@ function evaluate(solver, [x, y], depth = 0) {
     return Math.min(...predictions); // it's trying to capture the group
 }
 
-console.log('Accuracy by area size:');
+console.log('Error by area size:\n');
+console.log(format('{0:5} | {1:5} | {2:5}', 'size', 'error', 'count'));
+console.log(format('{0:5} | {1:5} | {2:5}', '-'.repeat(5), '-'.repeat(5), '-'.repeat(5)));
 let asum = 0;
 
 for (let asize = 0; asize < accuracy.length; asize++) {
     const [average, n] = accuracy[asize] || [0, 0];
 
     if (n > 0) {
-        console.log(format('{0:2} {1:4} {2:4}', asize, average.toFixed(2), n));
+        console.log(format('{0:5} | {1:5} | {2:5}', asize, (1 - average).toFixed(3), n));
         asum += n * average;
     }
 }
 
-console.log('Average: ' + (asum / total).toFixed(2));
+console.log('\nAverage: ' + (1 - asum / total).toFixed(3));
 
 function print(name, size, depth, data) {
     console.log(name + ' = [ // ' + size + 'x' + size + 'x' + depth);
@@ -195,30 +200,73 @@ function slice(res, src, [x_size, y_size, z_size], [xmin, xmax], [ymin, ymax], [
  * and returns a single value in the 0..1
  * range.
  * 
- * @param {JSON} json weights of the DCNN
- * @returns {(tensor: number[]) => number}
+ * @param {JSON} json description of the NN
  */
 function reconstructDCNN(json) {
     const input = nn.value([WINDOW_SIZE * WINDOW_SIZE * F_COUNT]);
 
+    /*
+
+    (1573, 256) align/dense/weights:0
+         (256,) align/dense/bias:0
+
+     (256, 256) resb1/1/dense/weights:0
+         (256,) resb1/1/dense/bias:0
+
+     (256, 256) resb1/2/dense/weights:0
+         (256,) resb1/2/dense/bias:0
+
+       (256, 1) readout/dense/weights:0
+           (1,) readout/dense/bias:0
+
+    */
+
+    function get(name) {
+        const v = json.vars[name];
+        return v && v.data;
+    }
+
+    function fconn(x, w, b) {
+        x = nn.mul(x, w);
+        x = nn.add(x, b);
+        return x;
+    }
+
     let x = input;
 
-    for (let i = 0; ; i++) {
-        const w = json.vars['internal/weights:' + i];
-        const b = json.vars['internal/bias:' + i];
+    // the alignment layer
+    x = fconn(x,
+        get('align/dense/weights:0'),
+        get('align/dense/bias:0'));
+    x = nn.relu(x);
 
-        if (!w || !b) break;
+    // the residual tower
+    for (let i = 1; ; i++) {
+        const w_name = k => `resb${i}/${k}/dense/weights:0`;
+        const b_name = k => `resb${i}/${k}/dense/bias:0`;
 
-        x = nn.mul(x, w.data);
-        x = nn.add(x, b.data);
+        const w1 = get(w_name(1));
+        const b1 = get(b_name(1));
+
+        const w2 = get(w_name(2));
+        const b2 = get(b_name(2));
+
+        if (!w1) break;
+
+        const y = x;
+
+        x = fconn(x, w1, b1);
+        x = nn.relu(x);
+
+        x = fconn(x, w2, b2);
+        x = nn.add(x, y);
         x = nn.relu(x);
     }
 
-    const w = json.vars['readout/weights:0'];
-    const b = json.vars['readout/bias:0'];
-
-    x = nn.mul(x, w.data);
-    x = nn.add(x, b.data);
+    // the readout layer
+    x = fconn(x,
+        get('readout/dense/weights:0'),
+        get('readout/dense/bias:0'));
     x = nn.sigmoid(x);
 
     if (x.size != 1)

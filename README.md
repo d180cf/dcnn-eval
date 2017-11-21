@@ -19,16 +19,30 @@ The [DFS solver](https://github.com/d180cf/tsumego.js)
 essentially does this - it recursively computes the value of `f(B)`.
 The point of the DCNN is to predict this value.
 
-Currently, the best result is 94% accuracy. This is achieved
-with a stack of 3 residual blocks with 64 outputs each. Note,
-that a random number generator would have 50% accuracy because
-there are only two outputs.
+Currently, the best result is 94% accuracy:
 
 ![](assets/tensorboard.png)
 
-There is still room for improvement: this NN doesn't use convolutions,
-it doesn't use batch normalization, weight decay; the view is always
-centered at the target stone and only a few basic features are precomputed.
+This is achieved with a simple NN that consists of just 1 residual block:
+
+1. Input: `[11, 11, F]` where `F = 13` - the number of precomputed features.
+2. Alignment with a fully connected layer `[F, N]` where `N = 256` with a `[N]` bias and relu.
+3. Only 1 residual block:
+    1. The 1st fully connected layer `[N, N]` with a `[N]` bias and relu.
+    2. The 2nd fully connected layer `[N, N]` with a `[N]` bias, a skip connection and relu.
+4. Readout with a `[N, 1]` fully connected layer, a bias and sigmoid.
+
+The complexity of the NN is limited by the JS performance. Even such
+a simple NN needs `11*11*F*N + 2*N*N + N = 0.5 M` multiply-add operations,
+so JS on a Core i7 can evaluate the NN only 125 times a second. This is
+why it's hard to squeeze a typical `3x3` convolution here: one `3x3`
+layer with `64` filters would take `(11*3*64)**2 = 4.5 M` flops, a residual
+block needs two such layers at least and a decent DCNN needs at least a few
+residual blocks. It also appears that even such a residual tower cannot get
+beyond the 96% accuracy.
+
+This NN was trained without batch normalization: it made training faster,
+but introduced extra complexity without increasing final accuracy.
 
 # Features
 
@@ -117,22 +131,21 @@ Boards with too few available moves can be ignored as it's easier to run the usu
 
 # Applying DCNN
 
-`npm run eval` reads the JSON file with DCNN weights, reconstructs the NN, reads SGF files and applies the DCNN to them:
+`npm run eval` reads the JSON file with DCNN weights, reconstructs the NN, reads SGF files and applies the DCNN to them. Here is error rates by tsumego size:
 
-```
-Accuracy by area size:
-2  0.57 14
-3  0.72 335
-4  0.70 3332
-5  0.71 1767
-6  0.71 4272
-7  0.76 3438
-8  0.76 2145
-9  0.80 9004
-10 0.84 3157
-11 0.86 1021
-12 0.82 161
-13 0.93 61
-```
+size  | error | count
+----- | ----- | -----
+2     | 0.071 | 14
+3     | 0.018 | 335
+4     | 0.015 | 3332
+5     | 0.025 | 17673
+6     | 0.034 | 42728
+7     | 0.063 | 34385
+8     | 0.038 | 21451
+9     | 0.043 | 9004
+10    | 0.013 | 3157
+11    | 0.013 | 1021
+12    | 0.056 | 161
+13    | 0.000 | 61
 
-It's interesting that the accuracy is higher on harder problems.
+The strange maximum around 7 must be related to the fact that the DCNN was trained on tsumegos with 7+ available moves.

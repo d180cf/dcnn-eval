@@ -35,7 +35,7 @@ NN_NAME = NN_INFO.split('(')[0] # e.g. "rb1(3,64)" -> "rb1"
 NN_ARGS = () if NN_NAME == NN_INFO else eval(NN_INFO[len(NN_NAME):])
 SHUFFLE_WINDOW = 8192
 BATCH_SIZE = 256
-EPOCH_DURATION = 30.0 # seconds
+EPOCH_DURATION = 60.0 # seconds
 NUM_EPOCHS = 1000
 LR_INITIAL = 1.0
 LR_FACTOR = 0.5

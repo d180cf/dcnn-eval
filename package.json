@@ -1,5 +1,7 @@
 {
+    "name": "dcnn-eval",
     "version": "1.0.0",
+    "description": "Evaluates a tsume-go with a DCNN",
     "author": "d180cf",
     "files": [
       ".bin/dcnn.js"

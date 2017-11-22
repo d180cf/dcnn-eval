@@ -56,19 +56,22 @@ be `11 x 11` or `9 x 9` because most tsumegos fit in this area.
 
 The features are:
 
-- location is outside the board
-- stone is black
-- stone is white
-- stone is in atari, i.e. it has only 1 liberty
-- stone has adjcent stones of the same color
+1. location is outside the board
+1. stone is black
+1. stone is white
+1. stone belongs to the target group
+1. the group size is 1..4 (4 feature planes)
+1. the number of libs is 1..4 (4 feature planes)
+1. the intersection is a 1-point sure eye
 
 More features to be implemented:
 
-- stone can be captured in a ladder (aka the lambda-1 sequence)
-- stone can be captured with a net (aka the lambda-2 sequence)
-- location is the center of a nakade shape
-- safe group, i.e. stone belongs to the outer wall or to an alive shape
-- some sort of eye-detection, heuristics and so on
+1. stone can be captured in a ladder (aka the lambda-1 sequence)
+1. stone can be captured with a net (aka the lambda-2 sequence)
+1. location is the center of a nakade shape
+1. safe group, i.e. stone belongs to the outer wall or to an alive shape
+1. better eyeshape detection
+1. the Euler number
 
 # Design
 

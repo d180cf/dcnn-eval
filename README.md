@@ -161,3 +161,19 @@ bits | error
 
 Indeed, just 5 bits per weight is enough to retain the original accuracy.
 This means that this NN fits into `5 * (11*11*F*N + 2*N*N) = 325 KB`.
+
+# Results
+
+This is a problem [rated as 9 dan](http://goproblems.com/13083) on goproblems.com:
+
+<img src="http://rawgit.com/d180cf/dcnn-eval/master/assets/13083/1.svg" height="200pt"/><img src="http://rawgit.com/d180cf/dcnn-eval/master/assets/13083/2.svg" height="200pt"/><img src="http://rawgit.com/d180cf/dcnn-eval/master/assets/13083/3.svg" height="200pt"/>
+
+Green means the stone is likely to survive even if the opponent starts.
+Red means the stone is likely to die if the opponent starts.
+
+On the original setup, the NN thinks that the black stones are dead.
+It also thinks that playing at `A1` doesn't help saving the group.
+However a stone at `B2` is likely to save the group.
+
+This evaluation is confirmed by the solver, but it needs more than a minute to do that,
+while the NN takes a few milliseconds for the entire board.

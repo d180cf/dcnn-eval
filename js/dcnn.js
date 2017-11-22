@@ -13,10 +13,9 @@ module.exports = class DCNN {
      * range.
      * 
      * @param {JSON} json description of the NN
-     * @param {number} precision the number of bits per weight
      */
-    constructor(json, precision) {
-        this._nnfn = reconstructDCNN(json, precision);
+    constructor(json) {
+        this._nnfn = reconstructDCNN(json);
         this._planes = new Float32Array(18 * 18 * F_COUNT); // enough for any board size
         this._fslice = new Float32Array(WINDOW_SIZE * WINDOW_SIZE * F_COUNT); // no need to recreate it    
     }
@@ -57,7 +56,7 @@ function slice(res, src, [x_size, y_size, z_size], [xmin, xmax], [ymin, ymax], [
     }
 }
 
-function reconstructDCNN(json, precision) {
+function reconstructDCNN(json) {
     const input = nn.value([WINDOW_SIZE * WINDOW_SIZE * F_COUNT]);
 
     /*
@@ -75,14 +74,11 @@ function reconstructDCNN(json, precision) {
            (1,) readout/dense/bias:0
 
     */
-
-    const wmul = 1 << precision;
-
+    
     function get(name) {
         const v = json.vars[name];
         const w = v && v.data;
-
-        return !w || !precision ? w : w.map(x => Math.round(x * wmul) / wmul);
+        return w;
     }
 
     function fconn(x, w, b) {

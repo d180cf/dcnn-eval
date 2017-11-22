@@ -36,6 +36,6 @@
         "tensorboard": "start tensorboard --logdir=.bin/tf-logs",
         "dcnn": "python py/dcnn.py .bin/main.tfrecords .bin/test.tfrecords 11 13 .bin/tf-models .bin/tf-logs 15 rb1(1,256)",
         "eval": "node js/eval-dcnn .bin/tf-model.json .bin/problems/*.sgf",
-        "prepublish": "node_modules/.bin/webpack"
+        "webpack": "node_modules/.bin/webpack"
     }
 }

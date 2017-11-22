@@ -177,3 +177,9 @@ However a stone at `B2` is likely to save the group.
 
 This evaluation is confirmed by the solver, but it needs more than a minute to do that,
 while the NN takes a few milliseconds for the entire board.
+
+# Publishing
+
+`npm run webpack` takes NN weights from `.bin/tf-model.json` and merges them with a few JS files
+that evaluate the NN. The output is written to `.bin/dcnn.js`. Then `npm publish` uploads the file
+to NPM.

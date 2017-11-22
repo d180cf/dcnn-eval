@@ -170,6 +170,7 @@ This is a problem [rated as 9 dan](http://goproblems.com/13083) on goproblems.co
 
 Green means the stone is likely to survive even if the opponent starts.
 Red means the stone is likely to die if the opponent starts.
+The solution here is white plays at `B2` or `A2` to capture the group.
 
 On the original setup, the NN thinks that the black stones are dead.
 It also thinks that playing at `A1` doesn't help saving the group.

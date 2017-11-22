@@ -1,3 +1,5 @@
+[![npm version](https://badge.fury.io/js/dcnn-eval.svg)](https://www.npmjs.com/package/dcnn-eval)
+
 The idea is to build a DCNN that would answer one question:
 is the group safe? More precisely, it will tell whether
 the group cannot be captured if the opponent starts

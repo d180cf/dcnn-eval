@@ -170,6 +170,10 @@ This means that this NN fits into `5 * (11*11*F*N + 2*N*N) = 325 KB`.
 `npm run compress` reduces takes only 5 bits from each weight and writes the
 truncated NN to `.bin/tf-model.json`.
 
+There are interesting [ideas](https://arxiv.org/pdf/1603.05279.pdf) how weights
+can be reduced to 1-2 bits by using a scaling factor `W[i] -> alpha * sign(W[i])` to compensate the loss of
+precision, but I couldn't make it work without dramatic loss of accuracy.
+
 # Results
 
 This is a problem [rated as 9 dan](http://goproblems.com/13083) on goproblems.com:

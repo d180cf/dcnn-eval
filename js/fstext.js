@@ -16,6 +16,8 @@ exports.read = function read(path) {
  * @returns {void}
  */
 exports.write = function write(path, text) {
+    const status = fs.existsSync(path);
     mkdirp.sync(fspath.dirname(path));
     fs.writeFileSync(path, text, 'utf8');
+    return status;
 };

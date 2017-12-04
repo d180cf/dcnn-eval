@@ -56,16 +56,16 @@ be `11 x 11` or `9 x 9` because most tsumegos fit in this area.
 
 The features are:
 
-1. location is outside the board
-1. stone is black
-1. stone is white
+1. a plane of all 0s and a plane of all 1s: when zero padded, the two planes tell where the board edges are
+1. stone color: same as the target stone and of the opposite color
 1. stone belongs to the target group
-1. the group size is 1..4 (4 feature planes)
-1. the number of libs is 1..4 (4 feature planes)
+1. group size (4 planes)
+1. the number of liberties (4 planes)
 1. the intersection is a 1-point sure eye
 
 More features to be implemented:
 
+1. the intersection can be an eye (it can be an eye if it doesn't have adjacent stones of the opposite color)
 1. stone can be captured in a ladder (aka the lambda-1 sequence)
 1. stone can be captured with a net (aka the lambda-2 sequence)
 1. location is the center of a nakade shape

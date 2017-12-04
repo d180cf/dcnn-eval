@@ -3,31 +3,20 @@
  * Output: JSON files with features.
  */
 
-const [, script, inputFiles, outputDir, prefix] = process.argv;
+const [, script, inputDir, outputDir] = process.argv;
 
-if (!prefix) {
-    const pool = require('./proc-pool');
+const fspath = require('path');
+const glob = require('glob');
+const feats = require('./feats');
 
-    for (let i = 0; i < 16; i++)
-        pool.run(`node ${script} ${inputFiles} ${outputDir} ${i.toString(16)}`);
-} else {
-    const fs = require('fs');
-    const fspath = require('path');
-    const glob = require('glob');
-    const feats = require('./feats');
-        
-    console.log('Getting the list of files...');
-    const paths = glob.sync(inputFiles);
+console.log('Getting the list of files...');
+const paths = glob.sync(fspath.join(inputDir, '**', '*.sgf'));
+console.log(paths.length + ' files total');
 
-    console.log('Computing features...');
-    paths.forEach((path, index) => {
-        const name = fspath.basename(path, fspath.extname(path)) + '.json';
-        const output = fspath.join(outputDir, name);
+console.log('Computing features...');
+for (const path of paths) {
+    const relpath = fspath.relative(inputDir, path);
+    const output = fspath.join(outputDir, relpath).replace('.sgf', '.json');
 
-        if (prefix && !name.startsWith(prefix))
-            return;
-
-        if (!fs.existsSync(output))
-            feats.compute(path, output); // takes about 20 ms x 500 K files
-    });
+    feats.compute(path, output); // takes about 20 ms x 500 K files
 }

@@ -6,6 +6,7 @@ import datetime
 import numpy as np
 import random
 import tensorflow as tf
+
 from importlib import import_module
 
 print('Python %s' % (sys.version))
@@ -35,7 +36,7 @@ NN_NAME = NN_INFO.split('(')[0] # e.g. "rb1(3,64)" -> "rb1"
 NN_ARGS = () if NN_NAME == NN_INFO else eval(NN_INFO[len(NN_NAME):])
 SHUFFLE_WINDOW = 8192
 BATCH_SIZE = 256
-EPOCH_DURATION = 60.0 # seconds
+EPOCH_DURATION = 5.0 # seconds
 NUM_EPOCHS = 1000
 LR_INITIAL = 1.0
 LR_FACTOR = 0.5
@@ -68,15 +69,13 @@ def tprint(text):
 
 def parse(example):
     features = tf.parse_single_example(example, {
-        "size": tf.FixedLenFeature((), tf.int64),
-        "label": tf.FixedLenFeature((2), tf.int64),
+        "status": tf.FixedLenFeature((1), tf.int64),
         "shape": tf.FixedLenFeature((3), tf.int64),
         "planes": tf.VarLenFeature(tf.int64),
         "target": tf.VarLenFeature(tf.int64) })
 
-    size = features["size"] # area size
-    label = features["label"] # [0, 1] or [1, 0]
-    shape = features["shape"] # [N + 2, N + 2, F] where F is the number of features and N is the size of the board
+    label = features["status"] # -1, 0, +1
+    shape = features["shape"] # [N, N, F] where F is the number of features and N is the size of the board
     planes = features["planes"] # the features tensor with the shape above
     target = features["target"] # list of [target.x, target.y] pointers
 
@@ -93,9 +92,8 @@ def parse(example):
 
     t = target[index]
 
-    # the feature planes include the board wall, hence (x + 1, y + 1)
-    tx = t[0] + 1
-    ty = t[1] + 1
+    tx = t[0]
+    ty = t[1]
 
     # `image` = 11 x 11 slice around [tx, ty] from `planes`, padded with 0s
     # note, that the output format of features.js is [y, x, f]
@@ -113,7 +111,10 @@ def parse(example):
     rotate = tf.random_uniform([1], 0, 4, tf.int32)[0]
     image = tf.image.rot90(image, rotate)
 
-    return (label[1], image)
+    label = tf.cast(label, tf.float32)
+    image = tf.cast(image, tf.float32)
+
+    return (label[0], image)
 
 def make_dataset(filepath, batchsize):
     dataset = tf.data.TFRecordDataset(filepath, buffer_size=2**29)
@@ -133,6 +134,14 @@ images = tf.placeholder(tf.float32, shape=[None, N, N, F])
 labels = tf.placeholder(tf.float32, shape=[None])
 is_training = tf.placeholder(tf.bool)
 learning_rate = tf.placeholder(tf.float32)
+
+def print_input(label, image):
+    n, n, f = image.shape
+    print('label = %d' % label)
+    print('shape = %dx%dx%d' % (n, n, f))
+    for i in range(f):
+        print('feature = %d' % i)
+        print(image[:,:,i])
 
 # TF must have a better way to save the model, but I haven't figured it out.
 def save_model(file_path):
@@ -165,17 +174,16 @@ print('Constructing DCNN...')
 make_dcnn = import_module('graphs.' + NN_NAME).make_dcnn
 (prediction, loss, optimizer) = make_dcnn(images, labels, learning_rate, is_training, *NN_ARGS)
 
-avg_1 = tf.reduce_sum(labels * prediction) / tf.cast(tf.count_nonzero(labels), tf.float32)
-avg_0 = tf.reduce_sum((1 - labels) * prediction) / tf.cast(tf.count_nonzero(1 - labels), tf.float32)
-error = 1 - tf.reduce_mean(tf.nn.relu(tf.sign((prediction - 0.5) * (labels - 0.5))))
+pred_m, pred_v = tf.nn.moments(prediction, [0])
+hard_prediction = tf.cast(tf.abs(prediction) > 0.5, tf.float32) * tf.sign(prediction)
+error = tf.cast(tf.count_nonzero(labels - hard_prediction), tf.float32) / tf.cast(tf.size(labels), tf.float32)
+# error_s = ...
+# error_d = ...
+# error_0 = ...
 corr = correlation(prediction, labels)
 
 print('Trainable variables:')
 for v in tf.trainable_variables():
-    print('%15s %s' % (v.shape, v.name))
-
-print('UPDATE_OPS:')
-for v in tf.get_collection(tf.GraphKeys.UPDATE_OPS):
     print('%15s %s' % (v.shape, v.name))
 
 print('Starting the session...')
@@ -190,12 +198,9 @@ with tf.Session() as session:
 
     session.run(tf.global_variables_initializer())    
 
-    tf.summary.scalar('A_error', error)
-    tf.summary.scalar('A_loss', loss)
-    tf.summary.scalar('A_correlation', corr)
-    tf.summary.scalar('B_avg_0', avg_0)
-    tf.summary.scalar('B_avg_1', avg_1)
-    # tf.summary.scalar('C_learning_rate', learning_rate)
+    tf.summary.scalar('error', error)
+    tf.summary.scalar('loss', loss)
+    tf.summary.scalar('correlation', corr)
     merged = tf.summary.merge_all()
 
     test_writer = tf.summary.FileWriter(tb_path + '/validation')
@@ -207,7 +212,7 @@ with tf.Session() as session:
     prev = 0
 
     tprint('')
-    tprint('%5s %5s %5s %5s %5s %7s' % ('step', 'error', 'corr', 'save', 'test', 'perf'))
+    tprint('%5s %5s %5s %5s %5s %7s %5s %5s' % ('step', 'error', 'corr', 'save', 'test', 'perf', 'avg', 'var'))
     tprint('')
 
     try:
@@ -216,8 +221,8 @@ with tf.Session() as session:
             save_model(model_file)
 
             t1 = time.time()
-            _labels, _images = session.run(next_batch_test)
-            summary, _error, _corr = session.run([merged, error, corr], feed_dict={
+            _labels, _images = session.run(next_batch_test)     
+            summary, _error, _corr, _pred_m, _pred_v = session.run([merged, error, corr, pred_m, pred_v], feed_dict={
                 is_training: False,
                 learning_rate: lr,                    
                 labels: _labels,
@@ -227,13 +232,15 @@ with tf.Session() as session:
             t2 = time.time()
             speed = (step - prev) / EPOCH_DURATION * 3600 / 1e6 # thousands samples per hour
             prev = step
-            tprint('%5s %5.2f %5.2f %5s %5s %7s' % (
+            tprint('%5s %5.2f %5.2f %5s %5s %7s %5.2f %5.2f' % (
                 '%4.1fM' % (step / 1e6),
                 _error,
                 _corr,
                 '%4.1fs' % (t1 - t0),
                 '%4.1fs' % (t2 - t1),
-                '%4.1fM/h' % speed))
+                '%4.1fM/h' % speed,
+                _pred_m,
+                _pred_v))
 
             while time.time() < t2 + EPOCH_DURATION:
                 _labels, _images = session.run(next_batch_main)

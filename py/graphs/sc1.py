@@ -42,7 +42,7 @@ def make_dcnn(images, labels, learning_rate, is_training, n_resblocks = 2, n_fil
     print(3, x.shape)
 
     x = readout(x)
-    x = tf.sigmoid(x)
+    x = tf.tanh(x)
     print(4, x.shape)
 
     y = tf.reshape(x, [-1])

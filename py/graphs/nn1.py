@@ -28,7 +28,7 @@ def make_dcnn(images, labels, learning_rate, is_training):
     for n in [50, 30]:
         hlayer = tf.nn.relu(conn(hlayer, n))
 
-    output = tf.sigmoid(conn(hlayer, 1))
+    output = tf.tanh(conn(hlayer, 1))
     output = tf.reshape(output, [-1])
     e = tf.losses.mean_squared_error(labels, output)
     return (output, e, tf.train.AdamOptimizer(1e-4).minimize(e))

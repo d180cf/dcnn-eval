@@ -1,8 +1,10 @@
-const F_COUNT = 13; // the number of features
+const F_COUNT = 14;
 
 const [
 
-    F_WALL,
+    F_STARTS_D, // all 1s if the defender starts first
+    F_STARTS_A, // all 1s if the attacker starts first
+
     F_ALLY,
     F_ENEMY,
     F_TARGET,
@@ -28,49 +30,51 @@ exports.F_COUNT = F_COUNT;
  * planes where each number is in `0..1` range.
  * 
  * @param {number[]} result NHWC format;
- *      shape = `[n + 2, n + 2, F_COUNT]`, n = `board.size`;
- *      index = `[y + 1, x + 1, f]` to account for walls;
+ *      shape = `[n, n, F_COUNT]`, n = `board.size`;
+ *      index = `[y, x, f]` to account for walls;
  *      x, y, f are all zero based
  * @param {tsumego.Board} board
  * @param {{x: number, y: number}} target
+ * @param {number} player Who makes the first move.
+ *      +1 if the defender makes the first move
+ *      -1 if the attacker makes the first move
  */
-exports.features = function features(result, board, target) {
+exports.features = function features(result, board, target, player) {
     const size = board.size;
     const tblock = board.get(target.x, target.y);
     const color = Math.sign(tblock);
-    const offset = (x, y) => (y + 1) * (size + 2) * F_COUNT + (x + 1) * F_COUNT;
+    const offset = (x, y) => y * size * F_COUNT + x * F_COUNT;
 
-    if ((size + 2) * (size + 2) * F_COUNT > result.length)
+    if (size ** 2 * F_COUNT > result.length)
         throw Error('The output array is too small: ' + result.length);
 
     for (let i = 0; i < result.length; i++)
         result[i] = 0;
 
-    for (let x = -1; x < size + 1; x++) {
-        for (let y = -1; y < size + 1; y++) {
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
             const base = offset(x, y);
 
-            if (!board.inBounds(x, y)) {
-                result[base + F_WALL] = 1;
-            } else {
-                const block = board.get(x, y);
-                const { libs: nlibs, size: nsize } = board.getBlockInfo(x, y);
+            const block = board.get(x, y);
+            const { libs: nlibs, size: nsize } = board.getBlockInfo(x, y);
 
-                result[base + F_ALLY] = block * color > 0 ? 1 : 0;
-                result[base + F_ENEMY] = block * color < 0 ? 1 : 0;
-                result[base + F_TARGET] = block == tblock ? 1 : 0;
-                result[base + F_SURE_EYE] = isSureEye(board, +1, x, y) || isSureEye(board, -1, x, y) ? 1 : 0;
+            result[base + F_STARTS_D] = player > 0 ? 1 : 0;
+            result[base + F_STARTS_A] = player < 0 ? 1 : 0;
 
-                result[base + F_LIBS_1] = nlibs == 1 ? 1 : 0;
-                result[base + F_LIBS_2] = nlibs == 2 ? 1 : 0;
-                result[base + F_LIBS_3] = nlibs == 3 ? 1 : 0;
-                result[base + F_LIBS_4] = nlibs >= 4 ? 1 : 0;
+            result[base + F_ALLY] = block * color > 0 ? 1 : 0;
+            result[base + F_ENEMY] = block * color < 0 ? 1 : 0;
+            result[base + F_TARGET] = block == tblock ? 1 : 0;
+            result[base + F_SURE_EYE] = isSureEye(board, +1, x, y) || isSureEye(board, -1, x, y) ? 1 : 0;
 
-                result[base + F_SIZE_1] = nsize == 1 ? 1 : 0;
-                result[base + F_SIZE_2] = nsize == 2 ? 1 : 0;
-                result[base + F_SIZE_3] = nsize == 3 ? 1 : 0;
-                result[base + F_SIZE_4] = nsize >= 4 ? 1 : 0;
-            }
+            result[base + F_LIBS_1] = nlibs == 1 ? 1 : 0;
+            result[base + F_LIBS_2] = nlibs == 2 ? 1 : 0;
+            result[base + F_LIBS_3] = nlibs == 3 ? 1 : 0;
+            result[base + F_LIBS_4] = nlibs >= 4 ? 1 : 0;
+
+            result[base + F_SIZE_1] = nsize == 1 ? 1 : 0;
+            result[base + F_SIZE_2] = nsize == 2 ? 1 : 0;
+            result[base + F_SIZE_3] = nsize == 3 ? 1 : 0;
+            result[base + F_SIZE_4] = nsize >= 4 ? 1 : 0;
         }
     }
 }

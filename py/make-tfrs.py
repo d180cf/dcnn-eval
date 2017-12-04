@@ -18,30 +18,41 @@ def _int64s(items):
   ints = [int(x) for x in flat]
   return tf.train.Feature(int64_list=tf.train.Int64List(value=ints))
 
+def listfiles(dirpath):
+  for root, subdirs, files in os.walk(dirpath):
+    for name in files:
+      yield os.path.join(root, name)
+
 def main(args):
+  print('Initializing...')
   wmain = tf.python_io.TFRecordWriter(mainfilepath)
   wtest = tf.python_io.TFRecordWriter(testfilepath)
   tprev = time.time()
+  nprev = 0
   count = 0
-  total = sum(1 for name in os.listdir(dirpath))
+  total = sum(1 for _ in listfiles(dirpath))
 
-  for name in os.listdir(dirpath):
+  print('Converting %d files...' % total)
+  for path in listfiles(dirpath):
     count += 1
 
     if time.time() > tprev + 5:
+      speed = (count - nprev) / (time.time() - tprev)
+      print('%d%% files converted: %d mins remaining...' % (
+        count/total*100,
+        (total - count) / speed / 60))
       tprev = time.time()
-      print('%d%% files converted: %d out of %d' % (count/total*100, count, total))
+      nprev = count
 
-    data = json.load(open(os.path.join(dirpath, name)))
-    asize = data["asize"] # area size
-    planes = data['features']
+    data = json.load(open(path))
+    planes = data['planes']
+    status = data['status'] # -1, 0, +1
 
     props = {
       'planes': _int64s(planes),
       'shape': _int64s(data["shape"]),
       'target': _int64s(data['target']),
-      'label': _int64s([1, 0] if data['safe'] == 0 else [0, 1]),
-      'size': _int64s([asize]),
+      'status': _int64s([status]),
     }
 
     record = tf.train.Example(features=tf.train.Features(feature=props))

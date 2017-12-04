@@ -22,7 +22,7 @@ def make_dcnn(images, labels, learning_rate, is_training, d = 2, n = 64):
         print(2, x.shape)
 
     x = nnu.fconn(x, 1, name='readout')
-    x = tf.sigmoid(x)
+    x = tf.tanh(x)
     print(3, x.shape)
 
     y = tf.reshape(x, [-1])

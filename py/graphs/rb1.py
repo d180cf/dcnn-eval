@@ -40,7 +40,7 @@ def make_dcnn(images, labels, learning_rate, is_training, d=3, n=64):
 
     with tf.variable_scope('readout'):
         x = dense(x, 1, True)
-        x = tf.sigmoid(x)
+        x = tf.tanh(x)
         print(4, x.shape)
 
     y = tf.reshape(x, [-1])

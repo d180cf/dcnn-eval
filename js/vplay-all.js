@@ -10,5 +10,5 @@ const pool = require('./proc-pool');
 const [, , inputFiles, outputDir] = process.argv;
 
 for (const path of glob.sync(inputFiles)) {
-    pool.run(`node vplay ${path} ${outputDir}`);
+    pool.run(`node js/vplay ${path} ${outputDir}`);
 }

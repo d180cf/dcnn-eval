@@ -20,7 +20,7 @@ function compute(input, output) {
     const tblock = board.get(target);
     const color = tsumego.sign(tblock);
     const [x, y] = tsumego.stone.coords(target);
-    const feats = new Array((board.size + 2) ** 2 * F_COUNT);
+    const feats = new Array(board.size ** 2 * F_COUNT);
 
     features(feats, board, { x, y });
 
@@ -29,7 +29,7 @@ function compute(input, output) {
         bsize: board.size,
         target: [...board.stones(tblock)].map(s => tsumego.stone.coords(s)),
         asize: +(/\bAS\[(\d+)\]/.exec(sgf) || [])[1],
-        shape: [board.size + 2, board.size + 2, F_COUNT],
+        shape: [board.size, board.size, F_COUNT],
         features: feats
     };
 

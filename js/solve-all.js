@@ -18,6 +18,6 @@ for (const dir of sgfp.dirs) {
 
         // problems marked with PL[..] and MA[..] are used by unit tests
         if (/\bPL\[\w+\]/.test(text) && /\bMA\[\w+\]/.test(text))
-            pool.run(`node solve ${file.path} ${path} ${maxTreeDepth} ${minAreaSize}`);
+            pool.run(`node js/solve ${file.path} ${path} ${maxTreeDepth} ${minAreaSize}`);
     }
 }

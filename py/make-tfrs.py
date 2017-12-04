@@ -33,15 +33,14 @@ def main(args):
       print('%d%% files converted: %d out of %d' % (count/total*100, count, total))
 
     data = json.load(open(os.path.join(dirpath, name)))
-    asize = data["asize"] # area size
     planes = data['features']
+    status = data['safe']
 
     props = {
       'planes': _int64s(planes),
       'shape': _int64s(data["shape"]),
       'target': _int64s(data['target']),
-      'label': _int64s([1, 0] if data['safe'] == 0 else [0, 1]),
-      'size': _int64s([asize]),
+      'label': _int64s([status]),
     }
 
     record = tf.train.Example(features=tf.train.Features(feature=props))

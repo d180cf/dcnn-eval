@@ -68,15 +68,13 @@ def tprint(text):
 
 def parse(example):
     features = tf.parse_single_example(example, {
-        "size": tf.FixedLenFeature((), tf.int64),
-        "label": tf.FixedLenFeature((2), tf.int64),
+        "label": tf.FixedLenFeature((1), tf.int64),
         "shape": tf.FixedLenFeature((3), tf.int64),
         "planes": tf.VarLenFeature(tf.int64),
         "target": tf.VarLenFeature(tf.int64) })
 
-    size = features["size"] # area size
-    label = features["label"] # [0, 1] or [1, 0]
-    shape = features["shape"] # [N + 2, N + 2, F] where F is the number of features and N is the size of the board
+    label = features["label"] # 0 or 1
+    shape = features["shape"] # [N, N, F] where F is the number of features and N is the size of the board
     planes = features["planes"] # the features tensor with the shape above
     target = features["target"] # list of [target.x, target.y] pointers
 
@@ -93,9 +91,8 @@ def parse(example):
 
     t = target[index]
 
-    # the feature planes include the board wall, hence (x + 1, y + 1)
-    tx = t[0] + 1
-    ty = t[1] + 1
+    tx = t[0]
+    ty = t[1]
 
     # `image` = 11 x 11 slice around [tx, ty] from `planes`, padded with 0s
     # note, that the output format of features.js is [y, x, f]
@@ -113,7 +110,7 @@ def parse(example):
     rotate = tf.random_uniform([1], 0, 4, tf.int32)[0]
     image = tf.image.rot90(image, rotate)
 
-    return (label[1], image)
+    return (label[0], image)
 
 def make_dataset(filepath, batchsize):
     dataset = tf.data.TFRecordDataset(filepath, buffer_size=2**29)

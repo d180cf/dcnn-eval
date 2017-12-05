@@ -21,7 +21,7 @@ The [DFS solver](http://github.com/d180cf/tsumego.js)
 essentially does this - it recursively computes the value of `f(B)`.
 The point of the DCNN is to predict this value.
 
-Currently, the best result is 94% accuracy:
+Currently, the best result is 95.6% accuracy:
 
 ![](assets/tensorboard.png)
 

@@ -20,16 +20,12 @@ const DCNN = require('./dcnn');
 const fstext = require('./fstext');
 const format = require('./format');
 
-const [, , dcnnFile, inputFiles, weightsBinaryPrecision, searchDepth] = process.argv;
+const [, , dcnnFile, inputFiles, searchDepth] = process.argv;
 
-const WEIGHTS_BIN_DIGITS = +weightsBinaryPrecision || 0; // the number of bits per weight
 const STEP_DURATION = 1.0; // seconds
 
-if (WEIGHTS_BIN_DIGITS > 0)
-    console.log('Weights precision reduced to ' + WEIGHTS_BIN_DIGITS + ' bits');
-
 console.log(`Reconstructing DCNN from ${dcnnFile}`);
-const dcnn = new DCNN(JSON.parse(fstext.read(dcnnFile)), WEIGHTS_BIN_DIGITS);
+const dcnn = new DCNN(JSON.parse(fstext.read(dcnnFile)));
 
 console.log(`Reading SGF files from ${inputFiles}`);
 const paths = glob.sync(inputFiles);
@@ -78,7 +74,7 @@ for (const path of paths) {
         process.stdout.write([
             (' ' + (done * 100 | 0)).slice(-3) + '%',
             '\u2588'.repeat(len1) + '\u2592'.repeat(len2),
-            (totalAccuracy.toFixed(2) + '0').slice(0, 4),
+            (totalAccuracy.toFixed(3) + '0').slice(0, 5),
             speed.toFixed(0) + ' N/s'
         ].join(' ') + '\r');
 

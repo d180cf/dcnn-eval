@@ -29,7 +29,7 @@ for (const name in json.vars) {
         const x = data[i];
         const y = Math.round(x * multiplier) / multiplier;
 
-        data[i] = Math.min(1, Math.max(-1, y)); // fit into -1..1 range
+        data[i] = precision < 1 ? x : Math.min(1, Math.max(-1, y)); // fit into -1..1 range
     }
 }
 

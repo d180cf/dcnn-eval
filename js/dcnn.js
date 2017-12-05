@@ -16,8 +16,8 @@ module.exports = class DCNN {
      */
     constructor(json) {
         this._nnfn = reconstructDCNN(json);
-        this._planes = new Float32Array(18 * 18 * F_COUNT); // enough for any board size
-        this._fslice = new Float32Array(WINDOW_SIZE * WINDOW_SIZE * F_COUNT); // no need to recreate it    
+        this._planes = new Float32Array(20 ** 2 * F_COUNT); // enough for any board size
+        this._fslice = new Float32Array(WINDOW_SIZE ** 2 * F_COUNT); // no need to recreate it    
     }
 
     eval(board, [x, y]) {
@@ -25,10 +25,9 @@ module.exports = class DCNN {
 
         features(this._planes, board, { x, y });
 
-        // (x + 1, y + 1) is to account for the wall
-        slice(this._fslice, this._planes, [board.size + 2, board.size + 2, F_COUNT],
-            [y + 1 - WINDOW_HALF, y + 1 + WINDOW_HALF],
-            [x + 1 - WINDOW_HALF, x + 1 + WINDOW_HALF],
+        slice(this._fslice, this._planes, [board.size, board.size, F_COUNT],
+            [y - WINDOW_HALF, y + WINDOW_HALF],
+            [x - WINDOW_HALF, x + WINDOW_HALF],
             [0, F_COUNT - 1]);
 
         return this._nnfn(this._fslice);
@@ -57,7 +56,7 @@ function slice(res, src, [x_size, y_size, z_size], [xmin, xmax], [ymin, ymax], [
 }
 
 function reconstructDCNN(json) {
-    const input = nn.value([WINDOW_SIZE * WINDOW_SIZE * F_COUNT]);
+    const input = nn.value([WINDOW_SIZE ** 2 * F_COUNT]);
 
     /*
 

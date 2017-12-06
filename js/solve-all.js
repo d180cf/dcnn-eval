@@ -14,7 +14,7 @@ for (const dir of sgfp.dirs) {
     for (const file of dir.problems) {
         const text = file + '';
         const hash = md5(text).slice(0, 7);
-        const path = fspath.join(outputDir, hash + '.sgf');
+        const path = fspath.join(outputDir, hash);
 
         // problems marked with PL[..] and MA[..] are used by unit tests
         if (/\bPL\[\w+\]/.test(text) && /\bMA\[\w+\]/.test(text))

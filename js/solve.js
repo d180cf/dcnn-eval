@@ -3,36 +3,38 @@
  * Output: SGF file with a tree of safe-unsafe lines.
  */
 
-const fs = require('fs');
+const fstext = require('./fstext');
 const fspath = require('path');
 const mkdirp = require('mkdirp');
 const tsumego = require('tsumego.js');
 
-const [, , input, output, maxTreeDepth, minAreaSize] = process.argv;
+const [, , input, outputDir, maxTreeDepth, minAreaSize] = process.argv;
 
 try {
-    if (fs.existsSync(output)) {
-        console.log('already exists: ' + output);
-        process.exit(0);
-    }
-
-    const sgf = fs.readFileSync(input, 'utf8');
+    const sgf = fstext.read(input);
     const solver = new tsumego.Solver(sgf);
     const board = solver.board;
     const color = tsumego.sign(board.get(solver.target));
 
-    console.log('solving the problem...');
-    const move = solver.solve(-color, -color);
-    const safe = tsumego.stone.color(move) * -color > 0 ? 0 : 1;
+    mkdirp.sync(outputDir);
 
-    console.log('generating subproblems...');
-    const tree = maketree(sgf);
+    // 1-st tree of moves when the attacker makes the first move
+    // 2-nd tree of moves when the defender makes the first move
+    for (const player of [-color, +color]) {
+        const tree = maketree(sgf, player);
 
-    mkdirp.sync(fspath.dirname(output));
-    const data = board.sgf.slice(0, -1)
-        + 'MA' + tsumego.stone.toString(solver.target)
-        + '\n' + tree + ')';
-    fs.writeFileSync(output, data, 'utf8');
+        const data = board.sgf.slice(0, -1)
+            + 'PL[' + (player > 0 ? 'B' : 'W') + ']'
+            + 'MA' + tsumego.stone.toString(solver.target)
+            + '\nC[' + (player * color > 0 ? 'defender' : 'attacker') + ' makes the first move]'
+            + '\n' + tree + ')';
+
+        const filename = player * color > 0 ? 'D' : 'A';
+        const output = fspath.join(outputDir, filename + '.sgf');
+
+        console.log(output);
+        fstext.write(output, data);
+    }
 } catch (err) {
     throw err;
 }
@@ -48,16 +50,18 @@ try {
  * The output is a tree of moves in the SGF format.
  * 
  * @param {string} sgf
+ * @param {number} player Tells who makes the first move
  * @returns {string}
  */
-function maketree(sgf) {
+function maketree(sgf, player) {
     const solver = new tsumego.Solver(sgf);
     const board = solver.board;
     const color = tsumego.sign(board.get(solver.target));
+    const komaster = -color; // the attacker can recapture any ko
     const cache = {}; // cache[board.hash] = isTargetSafe()
 
     function isTargetSafe() {
-        const move = solver.solve(-color, -color);
+        const move = solver.solve(player, komaster);
         return tsumego.stone.color(move) * color > 0;
     }
 
@@ -84,9 +88,6 @@ function maketree(sgf) {
             return count;
         }
 
-        if (isTargetCaptured())
-            return 0;
-
         const moves = [...solver.getValidMovesFor(safe ? -color : color)];
 
         // skip trivial positions with only a few possible moves
@@ -101,7 +102,7 @@ function maketree(sgf) {
         for (const move of moves) {
             board.play(move);
 
-            if (!cache[board.hash]) {
+            if (!isTargetCaptured() && !cache[board.hash]) {
                 // even if the opponent is the ko master,
                 // there are cases when a ko changes the
                 // status of the target group, so it's

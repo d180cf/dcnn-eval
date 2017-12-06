@@ -11,22 +11,22 @@ let total = 0;
 
 for (const path of glob.sync(input)) {
     const data = fstext.read(path);
-    const safe = (/TS\[(\d)\]/ || []).exec(data)[1] || 2;
-    const size = (/AS\[(\d+)\]/ || []).exec(data)[1] || 0;
+    const safe = +/TS\[(.)\]/.exec(data)[1];
+    const size = +/AS\[(\d+)\]/.exec(data)[1];
+    const defs = +/DS\[(.)\]/.exec(data)[1];
 
-    stats[size] = stats[size] || [0, 0, 0];
-    stats[size][safe]++;
+    stats[size] = stats[size] || [0, 0, 0, 0];
+    stats[size][defs + safe * 2]++; // bit 0 = who starts, bit 1 = who wins
     total++;
 }
 
-const pattern = '{0:>4} {1:>6} {2:>6}';
+const pattern = '{0:>4} {1:>6} {2:>6} {3:>6} {4:>6}';
 
-console.log(format(pattern, 'size', 'safe', 'unsafe'));
+console.log(format(pattern, 'size', 'AA', 'DA', 'AD', 'DD'));
 
 for (let n = 0; n < stats.length; n++) {
     if (!stats[n])
         continue;
 
-    const [safe, unsafe] = stats[n];
-    console.log(format(pattern, n, safe, unsafe));
+    console.log(format(pattern, n, ...stats[n]));
 }

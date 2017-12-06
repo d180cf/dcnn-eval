@@ -1,11 +1,11 @@
 [![npm version](https://badge.fury.io/js/dcnn-eval.svg)](https://www.npmjs.com/package/dcnn-eval)
 
-The idea is to build a DCNN that would answer one question:
-is the group safe? More precisely, it will tell whether
-the group cannot be captured if the opponent starts
-and can recapture any ko. For example, the group below
-is unsafe, so the DCNN should return a negative number
-for the single black stone:
+The idea is to build a DCNN that would tell if the target
+group is safe. More precisely, it would tell whether
+the group cannot be captured if the given player makes the
+first move and the attacker can recapture any ko. For example,
+the group below is unsafe, so the DCNN should return a value
+close to 0 for all the groups:
 
 <img src="http://rawgit.com/d180cf/tsumego.js/master/docs/pics/13083.svg" height="200pt" title="goproblems.com/13083" />
 
@@ -21,7 +21,7 @@ The [DFS solver](http://github.com/d180cf/tsumego.js)
 essentially does this - it recursively computes the value of `f(B)`.
 The point of the DCNN is to predict this value.
 
-Currently, the best result is 95.6% accuracy:
+Currently, the best result is 95% accuracy:
 
 ![](assets/tensorboard.png)
 
@@ -56,7 +56,10 @@ be `11 x 11` or `9 x 9` because most tsumegos fit in this area.
 
 The features are:
 
-1. a plane of all 0s and a plane of all 1s: when zero padded, the two planes tell where the board edges are
+1. a plane of all 1s if the attacker makes the first move; a plane of all 1s
+if the defender makes the first move; the two planes also play the role of
+board edge detector: when tensorflow pads inputs with zeros, the two planes
+tell where the board ends
 1. stone color: same as the target stone and of the opposite color
 1. stone belongs to the target group
 1. group size (4 planes)
@@ -89,11 +92,6 @@ multiplications-additions and if there are 3-4 layers this number grows to `500K
 which might seem a lot, but it turns out the the current JS V8 makes `~50 M/s` so it
 can apply this convolution `100` times a second. This doesn't take into account the fact
 that in web it can use multiple threads (web workers) and GPU (weblas, keras.js, etc.).
-
-There are quite a few possible NN designs:
-
-1. [All conv kernels mixed together](http://www.cs.cityu.edu.hk/~hwchun/research/PDF/Julian%20WONG%20-%20CCCT%202004%20a.pdf)
-2. [AlphaGoZero-style NN: 40 residual blocks with batch norm](http://www.nature.com/articles/nature24270.epdf?author_access_token=VJXbVjaSHxFoctQQ4p2k4tRgN0jAjWel9jnR3ZoTv0PVW4gB86EEpGqTRDtpIz-2rmo8-KG06gqVobU5NSCFeHILHcVFUeMsbvwS-lxjqQGg98faovwjxeTUgZAUMnRQ)
 
 # Training
 

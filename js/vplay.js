@@ -24,12 +24,20 @@ try {
     const board = solver.board;
     const target = solver.target;
     const color = tsumego.sign(board.get(target));
+    const player = text.indexOf('PL[B]') > 0 ? +1 : text.indexOf('PL[W]') > 0 ? -1 : 0;
+
+    if (!player)
+        throw Error('PL[.] needs to tell who makes the first move');
 
     let nvars = 0;
     let ndups = 0;
     let nsafe = 0;
 
     for (const move of expand(board, sgf.vars)) {
+        // "safe" means that if PL[.] makes the first move, MA[.] lives;
+        // the fact that the current move has the same color as MA[.] means
+        // that MA[.] was unsafe and needs an extra move to change this status;
+        // correspondingly, if the move is of the opposite color, MA[.] was safe
         const size = [...solver.getValidMovesFor(move[0] == 'B' ? -1 : +1)].length;
         const safe = board.get(tsumego.stone.fromString(move)) * color > 0;
         const hash = md5(board.sgf).slice(0, 7);
@@ -47,12 +55,13 @@ try {
             const data = board.sgf.slice(0, -1)
                 + 'AS[' + size + ']'
                 + 'MA[' + sgf.steps[0].MA[0] + ']'
+                + 'DS[' + (player * color > 0 ? 1 : 0) + ']'
                 + 'TS[' + (safe ? 1 : 0) + '])';
             fs.writeFileSync(path, data, 'utf8');
         }
     }
 
-    console.log('vars = ' + nvars + ' dups = ' + ndups + ' safe = ' + nsafe);
+    console.log('vars = ' + nvars + ' dups = ' + ndups + ' safe = ' + (nsafe / nvars * 100 | 0) + '%');
 } catch (err) {
     throw err;
 }

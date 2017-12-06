@@ -2,8 +2,8 @@ const F_COUNT = 14; // the number of features
 
 const [
 
-    F_ZERO, // all 0s
-    F_ONES, // all 1s
+    F_ATTACKER, // all 1s if attacker makes the first move
+    F_DEFENDER, // all 1s if defender makes the first move
 
     F_ALLY,
     F_ENEMY,
@@ -35,8 +35,9 @@ exports.F_COUNT = F_COUNT;
  *      x, y, f are all zero based
  * @param {tsumego.Board} board
  * @param {{x: number, y: number}} target
+ * @param {number} defender Tells if defender makes the first move
  */
-exports.features = function features(result, board, target) {
+exports.features = function features(result, board, target, defender) {
     const size = board.size;
     const tblock = board.get(target.x, target.y);
     const color = Math.sign(tblock);
@@ -55,8 +56,8 @@ exports.features = function features(result, board, target) {
             const block = board.get(x, y);
             const { libs: nlibs, size: nsize } = board.getBlockInfo(x, y);
 
-            result[base + F_ZERO] = 0;
-            result[base + F_ONES] = 1;
+            result[base + F_ATTACKER] = defender ? 0 : 1;
+            result[base + F_DEFENDER] = defender ? 1 : 0;
 
             result[base + F_ALLY] = block * color > 0 ? 1 : 0;
             result[base + F_ENEMY] = block * color < 0 ? 1 : 0;

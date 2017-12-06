@@ -20,10 +20,10 @@ module.exports = class DCNN {
         this._fslice = new Float32Array(WINDOW_SIZE ** 2 * F_COUNT); // no need to recreate it    
     }
 
-    eval(board, [x, y]) {
+    eval(board, [x, y], defender) {
         this._planes.fill(0); // just in case
 
-        features(this._planes, board, { x, y });
+        features(this._planes, board, { x, y }, defender);
 
         slice(this._fslice, this._planes, [board.size, board.size, F_COUNT],
             [y - WINDOW_HALF, y + WINDOW_HALF],

@@ -1,7 +1,7 @@
 const nn = require('./nn');
 const { features, F_COUNT } = require('./features');
 
-const WINDOW_SIZE = 11; // 11x11, must match the DCNN
+const WINDOW_SIZE = 13; // 11x11, must match the DCNN
 const WINDOW_HALF = WINDOW_SIZE / 2 | 0;
 
 module.exports = class DCNN {

@@ -1,6 +1,6 @@
 /**
  * Input: SGF file with a tsumego.
- * Output: SGF file with a tree of safe-unsafe lines.
+ * Output: SGF file with a tree of moves.
  */
 
 const fstext = require('./fstext');
@@ -9,6 +9,8 @@ const mkdirp = require('mkdirp');
 const tsumego = require('tsumego.js');
 
 const [, , input, outputDir, maxTreeDepth, minAreaSize] = process.argv;
+
+const m2str = tsumego.stone.toString;
 
 try {
     const sgf = fstext.read(input);
@@ -21,18 +23,19 @@ try {
     // 1-st tree of moves when the attacker makes the first move
     // 2-nd tree of moves when the defender makes the first move
     for (const player of [-color, +color]) {
+        const time = Date.now();
         const tree = maketree(sgf, player);
 
         const data = board.sgf.slice(0, -1)
             + 'PL[' + (player > 0 ? 'B' : 'W') + ']'
-            + 'MA' + tsumego.stone.toString(solver.target)
+            + 'MA' + m2str(solver.target)
             + '\nC[' + (player * color > 0 ? 'defender' : 'attacker') + ' makes the first move]'
             + '\n' + tree + ')';
 
         const filename = player * color > 0 ? 'D' : 'A';
         const output = fspath.join(outputDir, filename + '.sgf');
 
-        console.log(output);
+        console.log(output, Date.now() - time, 'ms');
         fstext.write(output, data);
     }
 } catch (err) {
@@ -58,15 +61,19 @@ function maketree(sgf, player) {
     const board = solver.board;
     const color = tsumego.sign(board.get(solver.target));
     const komaster = -color; // the attacker can recapture any ko
+    const sbestmove = Symbol('bestmove');
     const cache = {}; // cache[board.hash] = isTargetSafe()
 
-    function isTargetSafe() {
-        const move = solver.solve(player, komaster);
-        return tsumego.stone.color(move) * color > 0;
+    function isTargetSafe(move) {
+        return move * color > 0;
     }
 
     function isTargetCaptured() {
         return !board.get(solver.target);
+    }
+
+    function createNode(move) {
+        return move * player > 0 ? { [sbestmove]: m2str(move) } : {};
     }
 
     function expand(root, depth, safe) {
@@ -109,8 +116,10 @@ function maketree(sgf, player) {
                 // necessary to remember seen positions
                 cache[board.hash] = true;
 
-                if (isTargetSafe() != safe) {
-                    root[tsumego.stone.toString(move)] = {};
+                const resp = solver.solve(player, komaster);
+
+                if (isTargetSafe(resp) != safe) {
+                    root[m2str(move)] = createNode(resp);
                     count++;
                 }
             }
@@ -130,13 +139,18 @@ function maketree(sgf, player) {
             variations.push(';' + move + subtree);
         }
 
-        return variations.length > 1 || !depth ?
+        const result = variations.length > 1 || !depth ?
             variations.map(s => '\n' + ' '.repeat(depth * 4) + '(' + s + ')').join('') :
             variations.join('');
+
+        const bestmove = root[sbestmove];
+
+        return !bestmove ? result : 'TR' + bestmove.slice(1) + result;
     }
 
-    const tree = {}; // tree["B[fi]"] = subtree
-    const safe = isTargetSafe();
+    const resp = solver.solve(player, komaster);
+    const safe = isTargetSafe(resp);
+    const tree = createNode(resp); // tree["B[fi]"] = subtree
 
     for (let depth = 0; depth < maxTreeDepth; depth++) {
         const count = expand(tree, depth, safe);

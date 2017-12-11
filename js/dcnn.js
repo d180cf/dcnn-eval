@@ -1,7 +1,7 @@
 const nn = require('./nn');
 const { features, F_COUNT } = require('./features');
 
-const WINDOW_SIZE = 13; // 11x11, must match the DCNN
+const WINDOW_SIZE = 15; // must match the DCNN
 const WINDOW_HALF = WINDOW_SIZE / 2 | 0;
 
 module.exports = class DCNN {
@@ -69,11 +69,14 @@ function reconstructDCNN(json) {
      (256, 256) resb1/2/dense/weights:0
          (256,) resb1/2/dense/bias:0
 
-       (256, 1) readout/dense/weights:0
-           (1,) readout/dense/bias:0
+       (256, 1) eval/dense/weights:0
+           (1,) eval/dense/bias:0
+
+     (256, 225) move/dense/weights:0
+         (225,) move/dense/bias:0
 
     */
-    
+
     function get(name) {
         const v = json.vars[name];
         const w = v && v.data;
@@ -117,19 +120,28 @@ function reconstructDCNN(json) {
         x = nn.relu(x);
     }
 
-    // the readout layer
-    x = fconn(x,
-        get('readout/dense/weights:0'),
-        get('readout/dense/bias:0'));
-    x = nn.sigmoid(x);
+    // the "value" head to predict the outcome
+    let y = fconn(x,
+        get('eval/dense/weights:0'),
+        get('eval/dense/bias:0'));
+    y = nn.sigmoid(y);
 
-    if (x.size != 1)
-        throw Error('Invalid output shape: ' + x.shape);
+    // the "policy" head to select moves
+    let z = fconn(x,
+        get('move/dense/weights:0'),
+        get('move/dense/bias:0'));
+    z = nn.softmax(z);
+
+    if (y.size != 1)
+        throw Error('Invalid value output: ' + y.shape);
+
+    if (z.size != WINDOW_SIZE ** 2)
+        throw Error('Invalid policy output: ' + z.shape);
 
     return data => {
         input.set(data);
-        x.eval();
-        return x.value[0];
+        y.eval();
+        return y.value[0];
     };
 }
 

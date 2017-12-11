@@ -20,8 +20,9 @@ function compute(input, output) {
     const tblock = board.get(target);
     const color = tsumego.sign(tblock);
     const [x, y] = tsumego.stone.coords(target);
-    const safe = +/\bTS\[(\d+)\]/.exec(sgf)[1];
-    const defs = +/\bDS\[(\d+)\]/.exec(sgf)[1];
+    const safe = +/\bTS\[(.)\]/.exec(sgf)[1];
+    const defs = +/\bDS\[(.)\]/.exec(sgf)[1];
+    const move = (/\bTR\[(..)\]/.exec(sgf) || [])[1];
     const feats = new Array(board.size ** 2 * F_COUNT);
 
     features(feats, board, { x, y }, defs);
@@ -30,6 +31,10 @@ function compute(input, output) {
         safe: safe,
         bsize: board.size,
         target: [...board.stones(tblock)].map(s => tsumego.stone.coords(s)),
+        moves: (!move ? [] : [move])
+            .map(x => 'W[' + x + ']')
+            .map(tsumego.stone.fromString)
+            .map(tsumego.stone.coords),
         asize: +/\bAS\[(\d+)\]/.exec(sgf)[1],
         shape: [board.size, board.size, F_COUNT],
         features: feats

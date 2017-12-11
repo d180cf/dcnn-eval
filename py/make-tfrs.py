@@ -40,6 +40,7 @@ def main(args):
       'planes': _int64s(planes),
       'shape': _int64s(data["shape"]),
       'target': _int64s(data['target']),
+      'moves': _int64s(data['moves']),
       'label': _int64s([status]),
     }
 

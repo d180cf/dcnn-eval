@@ -18,8 +18,9 @@
   },
   "scripts": {
     "test-solve": "node js/solve node_modules/sgf-problems/gop/12354.sgf .bin/test/vars 20 7",
-    "test-vplay": "node js/vplay .bin/test/vars/A.sgf .bin/test/subp",
-    "test-check": "node js/check-all .bin/test/subp/*.sgf 100",
+    "test-vplay": "node js/vplay .bin/test/vars/A.sgf .bin/test/subp && node js/vplay .bin/test/vars/D.sgf .bin/test/subp",
+    "test-check": "node js/check-all .bin/test/subp/*.sgf 500",
+    "test-feats": "node js/feats-all .bin/test/subp/*.sgf .bin/test/features",
     "fview": "node js/fview .bin/features.json .bin/features.txt",
     "solve": "node js/solve-all .bin/solutions 20 7",
     "vplay": "node js/vplay-all .bin/solutions/**/*.sgf .bin/problems",
@@ -30,9 +31,12 @@
     "test-tfrs": "python py/test-tfrs.py .bin/test.tfrecords 10",
     "read-tfrs": "python py/read-tfrs.py .bin/test.tfrecords 9",
     "tensorboard": "start tensorboard --logdir=.bin/tf-logs",
-    "dcnn": "python py/dcnn.py .bin/main.tfrecords .bin/test.tfrecords 13 14 .bin/tf-models .bin/tf-logs 15 rb1(1,256)",
+    "dcnn": "python py/dcnn.py .bin/main.tfrecords .bin/test.tfrecords 15 14 .bin/tf-models .bin/tf-logs 15 rb1(1,256)",
     "compress": "node js/compress .bin/tf-models/rb1-1-256.json .bin/tf-model.json 0",
     "eval": "node js/eval-dcnn .bin/tf-model.json .bin/problems/*.sgf 15",
-    "webpack": "node_modules/.bin/webpack"
+    "webpack": "node_modules/.bin/webpack",
+    "prepare": "npm run solve && npm run vplay && npm run check && npm run features && npm run tfrecords",
+    "train": "npm run tensorboard && npm run dcnn",
+    "prepublish": "npm run compress && npm run webpack && npm run eval"
   }
 }

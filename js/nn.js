@@ -24,23 +24,30 @@ function operation(shape, deps, eval, init) {
     return op;
 }
 
-function moments(a) {
-    let n = a.length;
-    let s = 0;
-
-    for (let i = 0; i < n; i++)
-        s += a[i];
-
-    let m = s / n;
-    let v = 0;
-
-    for (let i = 0; i < n; i++)
-        v += (a[i] - m) * (a[i] - m);
-
-    return [m, Math.sqrt(v / n)];
-}
-
 const nn = {};
+
+/**
+ * Computes `[mean, variance]`.
+ */
+nn.moments = function moments(a) {
+    let n = a.size;
+
+    return operation([2], [a], (r, [a]) => {
+        let s = 0;
+
+        for (let i = 0; i < n; i++)
+            s += a[i];
+
+        let m = s / n;
+        let v = 0;
+
+        for (let i = 0; i < n; i++)
+            v += (a[i] - m) * (a[i] - m);
+
+        r[0] = m;
+        r[1] = Math.sqrt(v / n);
+    });
+};
 
 /**
  * @param {number[]} shape
@@ -120,6 +127,22 @@ nn.relu = function relu(x) {
  */
 nn.sigmoid = function sigmoid(x) {
     return nn.map(x, x => 1 / (1 + Math.exp(-x)));
+};
+
+/**
+ * Element-wise `y = exp(x) / sum exp(x)`
+ */
+nn.softmax = function softmax(x) {
+    const n = x.size;
+    const e = nn.map(x, x => Math.exp(x));
+    const s = nn.moments(e);
+
+    return operation(x.shape, [e, s], (y, [e, s]) => {
+        const sum = s[0] * n; // mean * size
+
+        for (let i = 0; i < n; i++)
+            y[i] = e[i] / sum;
+    });
 };
 
 module.exports = nn;

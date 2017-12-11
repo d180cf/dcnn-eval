@@ -33,7 +33,7 @@ try {
     let ndups = 0;
     let nsafe = 0;
 
-    for (const move of expand(board, sgf.vars)) {
+    for (const [move, bestmove] of expand(board, sgf.vars)) {
         // "safe" means that if PL[.] makes the first move, MA[.] lives;
         // the fact that the current move has the same color as MA[.] means
         // that MA[.] was unsafe and needs an extra move to change this status;
@@ -53,8 +53,9 @@ try {
         } else {
             mkdirp.sync(fspath.dirname(path));
             const data = board.sgf.slice(0, -1)
+                + (bestmove ? 'TR[' + bestmove + ']' : '')
                 + 'AS[' + size + ']'
-                + 'MA[' + sgf.steps[0].MA[0] + ']'
+                + 'MA[' + sgf.steps[0].MA[0] + ']'                
                 + 'DS[' + (player * color > 0 ? 1 : 0) + ']'
                 + 'TS[' + (safe ? 1 : 0) + '])';
             fs.writeFileSync(path, data, 'utf8');
@@ -71,7 +72,7 @@ try {
  * 
  * @param {tsumego.Board} board 
  * @param {tsumego.SGF.Node[]} vars
- * @returns {Iterable<string>}
+ * @returns {Iterable<[string, string]>}
  */
 function* expand(board, vars) {
     for (const node of vars) {
@@ -81,7 +82,7 @@ function* expand(board, vars) {
                 'W[' + step.W[0] + ']';
 
             board.play(tsumego.stone.fromString(move));
-            yield move;
+            yield [move, step.TR && step.TR[0]];
         }
 
         if (node.vars)

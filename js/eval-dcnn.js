@@ -70,7 +70,7 @@ while (Date.now() < ends) {
         for (let i = 0; i < 5; i++) {
             const j = indexes[i];
             const p = p_moves[j];
-            const n = bsize;
+            const n = Math.round(Math.sqrt(p_moves.length));
             const y = (j / n | 0) - (n / 2 | 0) + ty;
             const x = (j % n | 0) - (n / 2 | 0) + tx;
             const c = dfndr ? +tcolor : -tcolor;
@@ -78,7 +78,9 @@ while (Date.now() < ends) {
             const s = (() => {
                 if (!board.play(m))
                     return 'invalid';
-                const r = solver.solve(-c, -tcolor);
+                const r = board.get(target) ?
+                    solver.solve(-c, -tcolor) :
+                    -tcolor;
                 board.undo();
                 return r * c > 0 ? 'correct' : 'wrong';
             })();

@@ -141,7 +141,8 @@ function reconstructDCNN(json) {
     return data => {
         input.set(data);
         y.eval();
-        return y.value[0];
+        z.eval();
+        return [y.value[0], z.value];
     };
 }
 

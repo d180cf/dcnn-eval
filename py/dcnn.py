@@ -49,7 +49,7 @@ print('NN info: ' + NN_INFO)
 
 model_file = models_dir + '/' + model_name + '.json'
 os.makedirs(models_dir, exist_ok=True)
-print('Model file: ' + model_file)
+print('Weights: ' + model_file)
 
 tb_indx = 1
 while os.path.isdir(logs_path + '/' + model_name + '/' + str(tb_indx)):

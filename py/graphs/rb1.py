@@ -68,6 +68,11 @@ def make_dcnn(images, labels, bmoves, is_training, d=3, n=64):
         p = tf.reshape(p, [-1, N, N])
 
     e = v_err + p_err # cross-entropy and MSE losses are weighted equally
+ 
+    # the L2 regularization parameter is set to 1e-4
+    e += 1e-4 * tf.add_n([ tf.nn.l2_loss(v)
+        for v in tf.trainable_variables()
+            if 'bias' not in v.name ])
 
     with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
         return (v, p, e)

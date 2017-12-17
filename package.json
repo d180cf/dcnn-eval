@@ -32,7 +32,7 @@
     "test-tfrs": "python py/test-tfrs.py .bin/test.tfrecords 10",
     "read-tfrs": "python py/read-tfrs.py .bin/test.tfrecords 9",
     "tensorboard": "start tensorboard --logdir=.bin/tf-logs",
-    "dcnn": "python py/dcnn.py .bin/main.tfrecords .bin/test.tfrecords 15 14 .bin/tf-models .bin/tf-logs 15 rb1(1,256)",
+    "dcnn": "python py/dcnn.py .bin/main.tfrecords .bin/test.tfrecords 15 14 .bin/tf-models .bin/tf-logs 12.5 rb1(1,256)",
     "compress": "node js/compress .bin/tf-models/rb1-1-256.json .bin/tf-model.json 0",
     "eval": "node js/eval-dcnn .bin/tf-model.json .bin/problems/*.sgf 45",
     "webpack": "node_modules/.bin/webpack"

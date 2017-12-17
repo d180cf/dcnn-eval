@@ -60,20 +60,20 @@ function reconstructDCNN(json) {
 
     /*
 
-    (1573, 256) align/dense/weights:0
+    (3150, 256) align/dense/weights:0
          (256,) align/dense/bias:0
-
      (256, 256) resb1/1/dense/weights:0
          (256,) resb1/1/dense/bias:0
-
      (256, 256) resb1/2/dense/weights:0
          (256,) resb1/2/dense/bias:0
-
-       (256, 1) eval/dense/weights:0
-           (1,) eval/dense/bias:0
-
-     (256, 225) move/dense/weights:0
-         (225,) move/dense/bias:0
+     (256, 256) eval/dense/weights:0
+         (256,) eval/dense/bias:0
+       (256, 1) eval/dense_1/weights:0
+           (1,) eval/dense_1/bias:0
+     (256, 256) move/dense/weights:0
+         (256,) move/dense/bias:0
+     (256, 225) move/dense_1/weights:0
+         (225,) move/dense_1/bias:0
 
     */
 
@@ -124,12 +124,20 @@ function reconstructDCNN(json) {
     let y = fconn(x,
         get('eval/dense/weights:0'),
         get('eval/dense/bias:0'));
+    y = nn.relu(y);
+    y = fconn(y,
+        get('eval/dense_1/weights:0'),
+        get('eval/dense_1/bias:0'));
     y = nn.sigmoid(y);
 
     // the "policy" head to select moves
     let z = fconn(x,
         get('move/dense/weights:0'),
         get('move/dense/bias:0'));
+    z = nn.relu(z);
+    z = fconn(z,
+        get('move/dense_1/weights:0'),
+        get('move/dense_1/bias:0'));
     z = nn.softmax(z);
 
     if (y.size != 1)

@@ -1,6 +1,6 @@
 {
   "name": "dcnn-eval",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Evaluates a tsume-go with a DCNN",
   "author": "d180cf",
   "types": "index.d.ts",

@@ -22,6 +22,7 @@ const format = require('./format');
 
 const [, , dcnnFile, inputFiles, maxDuration] = process.argv;
 
+console.log('Evaluation stops in ' + maxDuration + 's');
 console.log(`Reconstructing DCNN from ${dcnnFile}`);
 const dcnn = new DCNN(JSON.parse(fstext.read(dcnnFile)));
 

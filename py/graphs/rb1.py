@@ -2,12 +2,16 @@ import tensorflow as tf
 from . import nnu
 
 # a few residual blocks followed by a fully connected layer
-def make_dcnn(images, labels, bmoves, learning_rate, is_training, d=3, n=64):
+def make_dcnn(images, labels, bmoves, is_training, d=3, n=64):
     def bnorm(x):
         return x # tf.layers.batch_normalization(x, name='bnorm', training=is_training)
 
     def dense(x, n):
         return nnu.fconn(x, n, name='dense', use_bias=True)
+
+    def dropout(x):
+        p = 1 - 0.5 * tf.cast(is_training, tf.float32)
+        return tf.nn.dropout(x, p)
 
     _, _, N, F = images.shape
 
@@ -45,6 +49,7 @@ def make_dcnn(images, labels, bmoves, learning_rate, is_training, d=3, n=64):
         v = bnorm(v)
         v = tf.nn.relu(v)
 
+        # v = dropout(v)
         v = dense(v, 1)
         v = tf.sigmoid(v)
         v = tf.reshape(v, [-1])
@@ -56,13 +61,13 @@ def make_dcnn(images, labels, bmoves, learning_rate, is_training, d=3, n=64):
         p = bnorm(p)
         p = tf.nn.relu(p)
 
+        # p = dropout(p)
         p = dense(p, int(N)**2)
         p_err = tf.losses.softmax_cross_entropy(tf.reshape(bmoves, [-1, int(N)**2]), p)
         p = tf.nn.softmax(p)
         p = tf.reshape(p, [-1, N, N])
 
     e = v_err + p_err # cross-entropy and MSE losses are weighted equally
-    optimizer = tf.train.AdamOptimizer()
 
     with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
-        return (v, p, e, optimizer.minimize(e))
+        return (v, p, e)

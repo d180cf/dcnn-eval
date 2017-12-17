@@ -198,7 +198,8 @@ def correlation(x, y):
 
 print('Constructing DCNN...')
 make_dcnn = import_module('graphs.' + NN_NAME).make_dcnn
-(eval_pred, move_pred, loss, optimizer) = make_dcnn(images, labels, bmoves, learning_rate, is_training, *NN_ARGS)
+(eval_pred, move_pred, loss) = make_dcnn(images, labels, bmoves, is_training, *NN_ARGS)
+optimizer = tf.train.AdamOptimizer().minimize(loss)
 
 # the average value predictions for cases when the true value is 1 or 0
 eval_1 = tf.reduce_sum(labels * eval_pred) / tf.cast(tf.count_nonzero(labels), tf.float32)
